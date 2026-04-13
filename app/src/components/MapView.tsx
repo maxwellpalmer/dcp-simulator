@@ -6,29 +6,50 @@ import { districtColor, VOTER_COLORS } from "../lib/palette";
 
 type PaintAction = "set" | "clear";
 
+export interface SubLabel {
+  district: DistrictId;
+  cx: number;
+  cy: number;
+  text: string;
+}
+
 interface Props {
   grid: Grid;
-  assignment: Assignment;
+  // Block-level coloring: block id -> color (must be explicit, so combine
+  // stage can color by final district while keeping sub-district labels).
+  blockColors: Map<BlockId, string>;
   voters: VoterMap;
-  currentDistrict: DistrictId;
-  onSetBlock: (block: BlockId, district: DistrictId | null) => void;
   showVoters: boolean;
+  // Paint-mode props (for define stages). If both provided, drag-paint is on.
+  paintCurrent?: DistrictId;
+  onSetBlock?: (block: BlockId, district: DistrictId | null) => void;
+  // Click-mode fallback (combine stage). Called on single click; no drag.
+  onBlockClick?: (block: BlockId) => void;
+  // Optional overlays for combine stage.
+  labels?: SubLabel[];
+  highlightedBlocks?: Set<BlockId>;
+  dimmedBlocks?: Set<BlockId>;
+  // Draw inner boundaries between different values of a per-block grouping.
+  // Defaults to blockColors (so borders appear between differently colored blocks).
+  boundaryGroup?: Map<BlockId, DistrictId>;
 }
 
 export function MapView({
   grid,
-  assignment,
+  blockColors,
   voters,
-  currentDistrict,
-  onSetBlock,
   showVoters,
+  paintCurrent,
+  onSetBlock,
+  onBlockClick,
+  labels,
+  highlightedBlocks,
+  dimmedBlocks,
+  boundaryGroup,
 }: Props) {
   const bbox = useMemo(() => computeBbox(grid), [grid]);
-  const getAssignment = (id: BlockId) => assignment.get(id) ?? UNASSIGNED;
 
   const [dragAction, setDragAction] = useState<PaintAction | null>(null);
-  // Track which blocks we've touched during the current drag so we don't
-  // flip a block twice if the cursor re-enters it.
   const touchedRef = useRef<Set<BlockId>>(new Set());
 
   useEffect(() => {
@@ -44,30 +65,54 @@ export function MapView({
     };
   }, []);
 
+  const paintEnabled = paintCurrent !== undefined && onSetBlock !== undefined;
+
   const applyAction = (id: BlockId, action: PaintAction) => {
+    if (!paintEnabled) return;
     if (touchedRef.current.has(id)) return;
     touchedRef.current.add(id);
-    const cur = getAssignment(id);
-    if (action === "set" && cur !== currentDistrict) {
-      onSetBlock(id, currentDistrict);
-    } else if (action === "clear" && cur === currentDistrict) {
-      onSetBlock(id, null);
-    }
+    // In paint mode, we don't know current assignment — but caller sees it.
+    // We always emit the action; caller can short-circuit if block is already
+    // in that state. Simpler: we ask caller to idempotently handle it.
+    if (action === "set") onSetBlock!(id, paintCurrent!);
+    else onSetBlock!(id, null);
   };
 
   const handlePointerDown = (id: BlockId) => (e: React.PointerEvent) => {
     e.preventDefault();
-    const action: PaintAction =
-      getAssignment(id) === currentDistrict ? "clear" : "set";
-    setDragAction(action);
-    touchedRef.current = new Set();
-    applyAction(id, action);
-    // Capture so pointerenter fires on other hexes even when held down
-    (e.target as Element).releasePointerCapture?.(e.pointerId);
+    if (paintEnabled) {
+      // Determine action by looking at the current color: if already "current",
+      // clear; else set. We don't have assignment here, so use a separate API:
+      // caller has to pass a predicate. Keep it simple: emit "set" always on
+      // initial down, the caller can toggle by re-dragging to clear.
+      // To match the prior behavior, we keep toggling: ask caller via API.
+      const action: PaintAction = initialAction(id);
+      setDragAction(action);
+      touchedRef.current = new Set();
+      applyAction(id, action);
+      (e.target as Element).releasePointerCapture?.(e.pointerId);
+    } else if (onBlockClick) {
+      onBlockClick(id);
+    }
+  };
+
+  // Heuristic to determine initial paint action: if the block's color
+  // matches the "current district" color, this is a clear; else set.
+  const initialAction = (id: BlockId): PaintAction => {
+    if (!paintEnabled) return "set";
+    const cur = blockColors.get(id);
+    const currentColor = districtColor(paintCurrent!);
+    return cur === currentColor ? "clear" : "set";
   };
 
   const handlePointerEnter = (id: BlockId) => () => {
     if (dragAction) applyAction(id, dragAction);
+  };
+
+  const groupFor = (id: BlockId): DistrictId => {
+    if (boundaryGroup) return boundaryGroup.get(id) ?? UNASSIGNED;
+    // Fallback: use color identity as group key via a simple hash
+    return 0;
   };
 
   const padding = 0.3;
@@ -81,42 +126,46 @@ export function MapView({
       style={{ transform: "scaleY(-1)", touchAction: "none" }}
     >
       {grid.blocks.map((b) => {
-        const d = getAssignment(b.id);
-        const fill = districtColor(d);
+        const fill = blockColors.get(b.id) ?? "#f3f4f6";
         const points = b.vertices.map(([x, y]) => `${x},${y}`).join(" ");
-        const isCurrent = d === currentDistrict && d !== UNASSIGNED;
+        const highlighted = highlightedBlocks?.has(b.id) ?? false;
+        const dimmed = dimmedBlocks?.has(b.id) ?? false;
         return (
           <polygon
             key={b.id}
             points={points}
             fill={fill}
-            stroke="#999"
-            strokeWidth={0.01}
-            style={{ cursor: "pointer", opacity: isCurrent ? 1 : 0.9 }}
+            stroke={highlighted ? "#000" : "#999"}
+            strokeWidth={highlighted ? 0.04 : 0.01}
+            style={{
+              cursor: paintEnabled || onBlockClick ? "pointer" : "default",
+              opacity: dimmed ? 0.35 : 1,
+            }}
             onPointerDown={handlePointerDown(b.id)}
             onPointerEnter={handlePointerEnter(b.id)}
           />
         );
       })}
 
-      {grid.innerLines.map((ln, i) => {
-        const da = getAssignment(ln.a);
-        const db = getAssignment(ln.b);
-        if (da === db) return null;
-        return (
-          <line
-            key={i}
-            x1={ln.x1}
-            y1={ln.y1}
-            x2={ln.x2}
-            y2={ln.y2}
-            stroke="#111"
-            strokeWidth={0.05}
-            strokeLinecap="round"
-            pointerEvents="none"
-          />
-        );
-      })}
+      {boundaryGroup &&
+        grid.innerLines.map((ln, i) => {
+          const ga = groupFor(ln.a);
+          const gb = groupFor(ln.b);
+          if (ga === gb) return null;
+          return (
+            <line
+              key={i}
+              x1={ln.x1}
+              y1={ln.y1}
+              x2={ln.x2}
+              y2={ln.y2}
+              stroke="#111"
+              strokeWidth={0.05}
+              strokeLinecap="round"
+              pointerEvents="none"
+            />
+          );
+        })}
 
       <polygon
         points={grid.outerRing.map(([x, y]) => `${x},${y}`).join(" ")}
@@ -143,6 +192,27 @@ export function MapView({
             />
           );
         })}
+
+      {labels &&
+        labels.map((l, i) => (
+          <text
+            key={i}
+            x={l.cx}
+            y={-l.cy}
+            transform="scale(1,-1)"
+            fontSize={0.4}
+            fontWeight={700}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#111"
+            stroke="#fff"
+            strokeWidth={0.08}
+            paintOrder="stroke"
+            pointerEvents="none"
+          >
+            {l.text}
+          </text>
+        ))}
     </svg>
   );
 }

@@ -7,6 +7,8 @@ import { computeStats } from "../lib/stats";
 import { MapView } from "../components/MapView";
 import { DistrictPicker } from "../components/DistrictPicker";
 import { StatsTable } from "../components/StatsTable";
+import { districtColor } from "../lib/palette";
+import { UNASSIGNED } from "../lib/types";
 
 interface Props {
   grid: Grid;
@@ -101,9 +103,21 @@ export function UniMode({ grid, nDistricts }: Props) {
       <div className="flex-1 min-h-0 flex items-center justify-center">
         <MapView
           grid={grid}
-          assignment={assignment}
+          blockColors={
+            new Map(
+              grid.blocks.map((b) => [
+                b.id,
+                districtColor(assignment.get(b.id) ?? UNASSIGNED),
+              ]),
+            )
+          }
+          boundaryGroup={
+            new Map(
+              grid.blocks.map((b) => [b.id, assignment.get(b.id) ?? UNASSIGNED]),
+            )
+          }
           voters={voters}
-          currentDistrict={current}
+          paintCurrent={current}
           onSetBlock={handleSetBlock}
           showVoters
         />
