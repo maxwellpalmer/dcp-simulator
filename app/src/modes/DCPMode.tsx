@@ -182,11 +182,8 @@ export function DCPMode({ grid, nDistricts }: Props) {
   }, [grid, assignment, pairing, nSub]);
 
   const finalStats = useMemo(
-    () =>
-      pairing.length === nDistricts
-        ? computeFinalStats(grid, assignment, pairing, voters)
-        : [],
-    [grid, assignment, pairing, voters, nDistricts],
+    () => computeFinalStats(grid, assignment, pairing, voters),
+    [grid, assignment, pairing, voters],
   );
 
   // ---- Hotkeys (define stage only) ----
