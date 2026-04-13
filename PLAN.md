@@ -13,18 +13,19 @@ Students practice redistricting in three modes:
 
 - **Frontend:** React + TypeScript + Vite + Tailwind. SVG rendering (hex count is small; SVG gives crisp styling and easy click targets).
 - **Hosting:** Netlify (static site + Netlify Functions + Netlify Blobs). Free tier sufficient for classroom scale.
-- **Asset generation:** Python script, run once per grid size, committed to repo.
+- **Asset generation:** R script (`scripts/generate_grids.R`) using `sf` for geometry and `redist::redist_smc` for valid random plan generation. Run once per grid-size change; JSON output committed to repo. The webapp has zero R dependency at runtime.
 - **Testing:** Vitest (unit + integration), fast-check (property-based), Playwright (E2E + visual regression), axe-core (a11y), GitHub Actions (CI).
 
 ## Grid sizes (pre-generated)
 
-| Size | Districts | Sub-districts |
-|---|---|---|
-| 70 blocks | 7 | 14 |
-| 140 blocks | 10 | 20 |
-| 140 blocks | 7 | 14 |
+Uni and DCP share one grid per session. The 140-block grid supports multiple district counts, so teacher picks both the grid size and the district count (or equivalently, district size).
 
-Teacher picks one when creating a session. Each grid size ships with: block list, polygons, adjacency graph, inner boundary segments, outer boundary polygon, and a batch of pre-validated random plans for the "Random Plan" button.
+| Grid | District options (Uni) | Sub-district options (DCP) |
+|---|---|---|
+| 70 blocks | 7 districts × 10 blocks | 14 sub × 5 blocks (7 final) |
+| 140 blocks | 7 × 20, or 10 × 14 | 14 × 10 (7 final), or 20 × 7 (10 final) |
+
+Each grid JSON ships with: block list (id, centroid, vertices), adjacency graph, inner boundary segments, outer boundary ring, and 100+ unique pre-generated valid random plans per supported district count.
 
 ## Voter distributions (teacher picks per round)
 
@@ -83,7 +84,7 @@ Pure logic:
 Random valid plans, invariants: total pop conserved, every block assigned exactly once, seat counts sum to N.
 
 ### 3. Grid asset validation
-Python generator has its own tests: every pre-generated random plan passes the JS validator (round-trip), adjacency graph connected, polygon count matches block count.
+JS-side smoke tests: load each grid JSON and assert — adjacency graph is a single connected component, every random plan is contiguous and equal-population per JS validator (round-trip with R), vertex/inner-line counts are consistent.
 
 ### 4. Integration tests (Vitest + MSW)
 Netlify Function handlers with mocked Blobs: create session → join → submit → retrieve; pairing algorithm handles odd/even class sizes; passphrase gate rejects wrong passphrase.
@@ -118,7 +119,7 @@ GitHub Actions runs units + integration + Playwright on every push. Netlify depl
 
 Each milestone fully tested before moving on.
 
-1. **Grid generator + asset pipeline** (Python script, three grid sizes, asset JSONs committed)
+1. **Grid generator + asset pipeline** ✅ — R script (`scripts/generate_grids.R`), 70- and 140-block grids, JSONs at `app/src/assets/grid_{70,140}.json`, 100+ valid random plans per district-count option.
 2. **Uni mode (solo)** — full interactive map drawing, validation, stats
 3. **DCP solo practice** — define + combine stages
 4. **Multi-user session** — join, voter sync, round orchestration
