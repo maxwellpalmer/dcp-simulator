@@ -217,11 +217,12 @@ export function DCPMode({ grid, nDistricts }: Props) {
       } else {
         const finalD = subToFinal.get(sub);
         if (finalD) m.set(b.id, districtColor(finalD));
+        else if (sub === pendingPick) m.set(b.id, lighten(districtColor(sub), 0.5));
         else m.set(b.id, lighten(districtColor(sub), 0.75));
       }
     }
     return m;
-  }, [grid, assignment, stage, subToFinal]);
+  }, [grid, assignment, stage, subToFinal, pendingPick]);
 
   const boundaryGroup = useMemo(() => {
     // In define: group = sub-district. In combine: group = final district
