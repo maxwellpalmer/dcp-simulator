@@ -246,7 +246,12 @@ export function DCPMode({ grid, nDistricts }: Props) {
     return out;
   }, [stage, grid, assignment]);
 
-  const highlightedBlocks = undefined;
+  const perimeterBlocks = useMemo(() => {
+    if (stage !== "combine" || pendingPick === null) return undefined;
+    const s = new Set<BlockId>();
+    for (const [blk, d] of assignment) if (d === pendingPick) s.add(blk);
+    return s;
+  }, [stage, pendingPick, assignment]);
 
   const dimmedBlocks = useMemo(() => {
     if (stage !== "combine" || pendingPick === null) return undefined;
@@ -276,7 +281,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
           onSetBlock={stage === "define" ? handleSetBlock : undefined}
           onBlockClick={stage === "combine" ? onBlockClickInCombine : undefined}
           labels={labels}
-          highlightedBlocks={highlightedBlocks}
+          perimeterBlocks={perimeterBlocks}
           dimmedBlocks={dimmedBlocks}
         />
       </div>

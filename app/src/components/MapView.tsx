@@ -32,6 +32,10 @@ interface Props {
   // Draw inner boundaries between different values of a per-block grouping.
   // Defaults to blockColors (so borders appear between differently colored blocks).
   boundaryGroup?: Map<BlockId, DistrictId>;
+  // Optional: draw a thick outline around the perimeter of blocks whose
+  // membership set matches. Used in combine stage to outline the selected
+  // sub-district without drawing internal hex edges.
+  perimeterBlocks?: Set<BlockId>;
 }
 
 export function MapView({
@@ -46,6 +50,7 @@ export function MapView({
   highlightedBlocks,
   dimmedBlocks,
   boundaryGroup,
+  perimeterBlocks,
 }: Props) {
   const bbox = useMemo(() => computeBbox(grid), [grid]);
 
@@ -174,6 +179,26 @@ export function MapView({
         strokeWidth={0.08}
         pointerEvents="none"
       />
+
+      {perimeterBlocks &&
+        grid.innerLines.map((ln, i) => {
+          const inA = perimeterBlocks.has(ln.a);
+          const inB = perimeterBlocks.has(ln.b);
+          if (inA === inB) return null;
+          return (
+            <line
+              key={`perim-${i}`}
+              x1={ln.x1}
+              y1={ln.y1}
+              x2={ln.x2}
+              y2={ln.y2}
+              stroke="#111"
+              strokeWidth={0.09}
+              strokeLinecap="round"
+              pointerEvents="none"
+            />
+          );
+        })}
 
       {showVoters &&
         grid.blocks.map((b) => {
