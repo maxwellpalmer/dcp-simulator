@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../lib/types";
-import { UNASSIGNED } from "../lib/types";
 import { generateVoters } from "../lib/voters";
 import type { DistributionMode } from "../lib/voters";
 import { validatePlan } from "../lib/validate";
@@ -33,18 +32,17 @@ export function UniMode({ grid, nDistricts }: Props) {
 
   const expectedPop = grid.blocks.length / nDistricts;
 
-  const handleBlockClick = useCallback(
-    (block: BlockId) => {
+  const handleSetBlock = useCallback(
+    (block: BlockId, district: DistrictId | null) => {
       setAssignment((prev) => {
         const next = new Map(prev);
-        const cur = next.get(block) ?? UNASSIGNED;
-        if (cur === current) next.delete(block);
-        else next.set(block, current);
+        if (district === null) next.delete(block);
+        else next.set(block, district);
         return next;
       });
       setErrors(null);
     },
-    [current],
+    [],
   );
 
   const reset = () => {
@@ -96,7 +94,7 @@ export function UniMode({ grid, nDistricts }: Props) {
           assignment={assignment}
           voters={voters}
           currentDistrict={current}
-          onBlockClick={handleBlockClick}
+          onSetBlock={handleSetBlock}
           showVoters
         />
       </div>
