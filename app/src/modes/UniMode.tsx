@@ -68,7 +68,10 @@ export function UniMode({ grid, nDistricts }: Props) {
   };
 
   const validate = useCallback(() => {
-    const errs = validatePlan(grid, assignment, { nDistricts });
+    const errs = validatePlan(grid, assignment, {
+      nDistricts,
+      requireDoughnutFree: true,
+    });
     setErrors(errs);
   }, [grid, assignment, nDistricts]);
 
