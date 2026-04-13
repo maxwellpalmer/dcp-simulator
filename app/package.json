@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:session": "netlify dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@netlify/blobs": "^10.7.4",
+    "@netlify/functions": "^5.2.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -27,6 +31,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "jsdom": "^29.0.2",
+    "netlify-cli": "^24.11.1",
     "postcss": "^8.5.9",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.2",

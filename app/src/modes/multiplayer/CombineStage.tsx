@@ -1,0 +1,223 @@
+import { useCallback, useMemo, useState } from "react";
+import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../../lib/types";
+import { UNASSIGNED } from "../../lib/types";
+import { MapView } from "../../components/MapView";
+import { StatsTable } from "../../components/StatsTable";
+import { districtColor, lighten } from "../../lib/palette";
+import { generateVoters } from "../../lib/voters";
+import {
+  adjacentSubDistricts,
+  computeFinalStats,
+  subDistrictLabel,
+  validatePairing,
+  type Pairing,
+} from "../../lib/combine";
+import { districtCentroids } from "../../lib/centroid";
+import { assignmentFromFlat } from "../../lib/serialize";
+import { api } from "../../lib/api";
+import type { SessionStateResponse } from "../../../shared/session";
+
+interface Props {
+  grid: Grid;
+  state: SessionStateResponse;
+  student: { id: string; name: string };
+  onSubmitted: () => void;
+}
+
+export function CombineStage({ grid, state, student, onSubmitted }: Props) {
+  const round = state.round!;
+  const nDistricts = state.session.nDistricts;
+  const nSub = nDistricts * 2;
+  const partnerDefine = state.combineTarget!.assignment;
+  const alreadySubmitted = !!round.combines[student.id];
+
+  const assignment: Assignment = useMemo(
+    () => assignmentFromFlat(grid, partnerDefine),
+    [grid, partnerDefine],
+  );
+
+  const voters = useMemo(
+    () => generateVoters(grid, { mode: round.voterDist, seed: round.voterSeed }),
+    [grid, round.voterDist, round.voterSeed],
+  );
+
+  const [pairing, setPairing] = useState<Pairing>([]);
+  const [pendingPick, setPendingPick] = useState<DistrictId | null>(null);
+  const [errors, setErrors] = useState<ValidationError[] | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const subToFinal = useMemo(() => {
+    const m = new Map<DistrictId, DistrictId>();
+    pairing.forEach(([a, b], i) => { m.set(a, i + 1); m.set(b, i + 1); });
+    return m;
+  }, [pairing]);
+
+  const candidateSubs = useMemo(() => {
+    if (pendingPick == null) return new Set<DistrictId>();
+    return adjacentSubDistricts(grid, assignment, pendingPick);
+  }, [grid, assignment, pendingPick]);
+
+  const handleSubClick = useCallback(
+    (sub: DistrictId) => {
+      if (sub === UNASSIGNED) return;
+      const pairIdx = pairing.findIndex((p) => p[0] === sub || p[1] === sub);
+      if (pairIdx >= 0) {
+        setPairing((p) => p.filter((_, i) => i !== pairIdx));
+        setPendingPick(null);
+        setErrors(null);
+        return;
+      }
+      if (pendingPick === null) {
+        setPendingPick(sub);
+        return;
+      }
+      if (pendingPick === sub) { setPendingPick(null); return; }
+      if (!candidateSubs.has(sub)) {
+        setErrors([{ code: "NOT_CONTIGUOUS", message: `${subDistrictLabel(pendingPick)} and ${subDistrictLabel(sub)} are not adjacent.` }]);
+        return;
+      }
+      setPairing((p) => [...p, [pendingPick, sub]]);
+      setPendingPick(null);
+      setErrors(null);
+    },
+    [pairing, pendingPick, candidateSubs],
+  );
+
+  const onBlockClick = useCallback(
+    (block: BlockId) => handleSubClick(assignment.get(block) ?? UNASSIGNED),
+    [assignment, handleSubClick],
+  );
+
+  const finalStats = useMemo(
+    () => computeFinalStats(grid, assignment, pairing, voters),
+    [grid, assignment, pairing, voters],
+  );
+
+  const expectedPop = grid.blocks.length / nDistricts;
+
+  const blockColors = useMemo(() => {
+    const m = new Map<BlockId, string>();
+    for (const b of grid.blocks) {
+      const sub = assignment.get(b.id) ?? UNASSIGNED;
+      const finalD = subToFinal.get(sub);
+      if (finalD) m.set(b.id, districtColor(finalD));
+      else if (sub === pendingPick) m.set(b.id, lighten(districtColor(sub), 0.5));
+      else m.set(b.id, lighten(districtColor(sub), 0.75));
+    }
+    return m;
+  }, [grid, assignment, subToFinal, pendingPick]);
+
+  const boundaryGroup = useMemo(() => {
+    const m = new Map<BlockId, DistrictId>();
+    for (const b of grid.blocks) {
+      const sub = assignment.get(b.id) ?? UNASSIGNED;
+      const final = subToFinal.get(sub);
+      m.set(b.id, final !== undefined ? final : 1000 + sub);
+    }
+    return m;
+  }, [grid, assignment, subToFinal]);
+
+  const labels = useMemo(() => {
+    const cents = districtCentroids(grid, assignment);
+    const out = [];
+    for (const [sub, { cx, cy }] of cents) {
+      out.push({ district: sub, cx, cy, text: subDistrictLabel(sub) });
+    }
+    return out;
+  }, [grid, assignment]);
+
+  const perimeterBlocks = useMemo(() => {
+    if (pendingPick === null) return undefined;
+    const s = new Set<BlockId>();
+    for (const [blk, d] of assignment) if (d === pendingPick) s.add(blk);
+    return s;
+  }, [pendingPick, assignment]);
+
+  const submit = async () => {
+    const errs = validatePairing(grid, assignment, pairing, { nSubDistricts: nSub });
+    setErrors(errs);
+    if (errs.length > 0) return;
+    setSubmitting(true);
+    try {
+      await api.submitCombine({
+        code: state.session.code,
+        studentId: student.id,
+        pairing,
+      });
+      onSubmitted();
+    } catch (e) {
+      setErrors([{ code: "UNASSIGNED_BLOCKS", message: e instanceof Error ? e.message : String(e) }]);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (alreadySubmitted) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <div className="text-center text-lg">
+          Combine submitted. Waiting for round to end...
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
+      <div className="flex-1 min-h-0 flex items-center justify-center">
+        <MapView
+          grid={grid}
+          blockColors={blockColors}
+          boundaryGroup={boundaryGroup}
+          voters={voters}
+          showVoters
+          onBlockClick={onBlockClick}
+          labels={labels}
+          perimeterBlocks={perimeterBlocks}
+        />
+      </div>
+      <aside className="w-full md:w-96 flex flex-col gap-4">
+        <section>
+          <h3 className="font-semibold mb-1">
+            Combine partner's sub-districts
+          </h3>
+          <p className="text-xs text-gray-500">
+            {pairing.length}/{nDistricts} pairs made.
+          </p>
+        </section>
+        <section>
+          <h4 className="text-sm font-semibold mb-1">Pairings</h4>
+          {pairing.length === 0 && <p className="text-xs text-gray-500">None yet.</p>}
+          <ul className="text-sm space-y-1">
+            {pairing.map(([a, b], i) => (
+              <li key={i} className="flex items-center gap-2">
+                <span className="inline-block w-3 h-3 rounded-sm border border-gray-400"
+                      style={{ background: districtColor(i + 1) }} />
+                District {i + 1}: {subDistrictLabel(a)} + {subDistrictLabel(b)}
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className="flex gap-2">
+          <button onClick={submit} disabled={submitting}
+                  className="px-3 py-2 rounded bg-black text-white text-sm">
+            {submitting ? "Submitting..." : "Submit"}
+          </button>
+          <button onClick={() => { setPairing([]); setPendingPick(null); }}
+                  className="px-3 py-2 rounded border text-sm">Clear</button>
+        </section>
+        <section>
+          <h3 className="font-semibold mb-1">Final district stats</h3>
+          <StatsTable stats={finalStats} expectedPop={expectedPop} />
+        </section>
+        {errors && errors.length > 0 && (
+          <section className="p-3 rounded text-sm bg-red-100 text-red-900">
+            <ul className="list-disc pl-5 space-y-1">
+              {errors.map((e, i) => <li key={i}>{e.message}</li>)}
+            </ul>
+          </section>
+        )}
+      </aside>
+    </div>
+  );
+}
