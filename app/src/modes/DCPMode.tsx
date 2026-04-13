@@ -23,7 +23,7 @@ import { districtCentroids } from "../lib/centroid";
 import { MapView, type SubLabel } from "../components/MapView";
 import { DistrictPicker } from "../components/DistrictPicker";
 import { StatsTable } from "../components/StatsTable";
-import { districtColor } from "../lib/palette";
+import { districtColor, lighten } from "../lib/palette";
 
 type Stage = "define" | "combine";
 
@@ -217,7 +217,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
       } else {
         const finalD = subToFinal.get(sub);
         if (finalD) m.set(b.id, districtColor(finalD));
-        else m.set(b.id, districtColor(sub));
+        else m.set(b.id, lighten(districtColor(sub), 0.75));
       }
     }
     return m;

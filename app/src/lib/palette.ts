@@ -16,3 +16,17 @@ export const VOTER_COLORS: Record<"A" | "B", string> = {
   A: "#1f2937",
   B: "#ffffff",
 };
+
+// Mix a hex color with white. amount=0 → unchanged, amount=1 → white.
+export function lighten(hex: string, amount: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  const lr = Math.round(r + (255 - r) * amount);
+  const lg = Math.round(g + (255 - g) * amount);
+  const lb = Math.round(b + (255 - b) * amount);
+  return "#" + [lr, lg, lb].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
