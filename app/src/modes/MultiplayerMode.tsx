@@ -141,6 +141,7 @@ function CreateForm({
   const [nDistricts, setNDistricts] = useState(dcpOptions[0]);
   const [totalRounds, setTotalRounds] = useState(3);
   const [voterDist, setVoterDist] = useState<DistributionMode>("random");
+  const [passphrase, setPassphrase] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -154,6 +155,7 @@ function CreateForm({
       const r = await api.createSession({
         gridSize, nDistricts, totalRounds,
         voterDist, voterSeed: Math.floor(Math.random() * 1_000_000),
+        teacherPassphrase: passphrase || undefined,
       });
       onCreated(r.code, r.teacherToken);
     } catch (e) {
@@ -193,6 +195,11 @@ function CreateForm({
           <option value="minorityClusteredB">Minority B clustered</option>
           <option value="majorityClusteredB">Majority B clustered</option>
         </select>
+      </label>
+      <label className="block text-sm">Teacher passphrase (optional)
+        <input value={passphrase} onChange={(e) => setPassphrase(e.target.value)}
+               type="password" placeholder="leave blank to use token URL only"
+               className="ml-2 border rounded px-2 py-1 w-48" />
       </label>
       <button onClick={create} disabled={busy}
               className="w-full mt-2 px-3 py-2 rounded bg-black text-white text-sm">
@@ -288,15 +295,41 @@ function TeacherView({
   refresh: () => void;
   error: string | null;
 }) {
+  const [passInput, setPassInput] = useState("");
   const [tokenInput, setTokenInput] = useState("");
+  const [authErr, setAuthErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
   if (!teacherToken) {
+    const tryLogin = async () => {
+      setBusy(true); setAuthErr(null);
+      try {
+        const r = await api.verifyTeacher({
+          code,
+          teacherPassphrase: passInput || undefined,
+          teacherToken: tokenInput || undefined,
+        });
+        onToken(r.teacherToken);
+      } catch (e) {
+        setAuthErr(e instanceof Error ? e.message : String(e));
+      } finally { setBusy(false); }
+    };
     return (
-      <div className="p-6 max-w-sm mx-auto space-y-2">
-        <h2 className="font-semibold">Enter teacher token for {code}</h2>
+      <div className="p-6 max-w-sm mx-auto space-y-3">
+        <h2 className="font-semibold">Teacher login for session {code}</h2>
+        <label className="block text-sm">Passphrase
+          <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)}
+                 className="mt-1 border rounded px-2 py-1 w-full" autoFocus />
+        </label>
+        <div className="text-xs text-gray-500">or paste the teacher token:</div>
         <input value={tokenInput} onChange={(e) => setTokenInput(e.target.value)}
+               placeholder="teacher token"
                className="border rounded px-2 py-1 w-full font-mono text-xs" />
-        <button onClick={() => onToken(tokenInput)}
-                className="px-3 py-1 rounded bg-black text-white text-sm">Use token</button>
+        <button onClick={tryLogin} disabled={busy || (!passInput && !tokenInput)}
+                className="px-3 py-2 rounded bg-black text-white text-sm w-full">
+          {busy ? "Checking..." : "Log in"}
+        </button>
+        {authErr && <div className="text-red-600 text-sm">{authErr}</div>}
       </div>
     );
   }

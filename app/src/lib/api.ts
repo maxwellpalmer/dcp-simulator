@@ -9,6 +9,8 @@ import type {
   SubmitCombineRequest,
   SubmitDefineRequest,
   AdvanceRequest,
+  EndSessionRequest,
+  VerifyTeacherRequest,
 } from "../../shared/session";
 
 async function call<T>(path: string, body?: unknown): Promise<T> {
@@ -52,4 +54,10 @@ export const api = {
 
   advance: (body: AdvanceRequest) =>
     call<{ ok: true }>("/api/session/advance", body),
+
+  endSession: (body: EndSessionRequest) =>
+    call<{ ok: true }>("/api/session/end", body),
+
+  verifyTeacher: (body: VerifyTeacherRequest) =>
+    call<{ ok: true; teacherToken: string }>("/api/session/verify-teacher", body),
 };

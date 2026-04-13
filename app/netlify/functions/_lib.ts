@@ -84,14 +84,56 @@ export function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
+export async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+export async function checkTeacher(
+  meta: SessionMeta,
+  teacherToken: string | undefined,
+  teacherPassphrase: string | undefined,
+): Promise<boolean> {
+  if (teacherToken && teacherToken === meta.teacherToken) return true;
+  if (teacherPassphrase && meta.teacherHash) {
+    const h = await sha256Hex(`${meta.code}:${teacherPassphrase}`);
+    if (h === meta.teacherHash) return true;
+  }
+  return false;
+}
+
 export async function requireTeacher(
   code: string,
   teacherToken: string | undefined,
+  teacherPassphrase?: string | undefined,
 ): Promise<SessionMeta | Response> {
   const meta = await loadMeta(code);
   if (!meta) return errorResponse("Unknown session", 404);
-  if (!teacherToken || teacherToken !== meta.teacherToken) {
-    return errorResponse("Invalid teacher token", 401);
+  if (!(await checkTeacher(meta, teacherToken, teacherPassphrase))) {
+    return errorResponse("Teacher authentication failed", 401);
   }
   return meta;
+}
+
+export async function loadAllRounds(
+  code: string,
+  upTo: number,
+) {
+  const out = [];
+  for (let i = 1; i <= upTo; i++) {
+    const r = await loadRound(code, i);
+    if (r) out.push(r);
+  }
+  return out;
+}
+
+export async function deleteSession(code: string): Promise<void> {
+  const s = store();
+  const prefix = `session/${code}/`;
+  // Netlify Blobs has no delete-by-prefix; iterate common keys.
+  const keys = [`${prefix}meta`, `${prefix}students`];
+  // Assume up to 20 rounds
+  for (let i = 1; i <= 20; i++) keys.push(`${prefix}round/${i}`);
+  await Promise.all(keys.map((k) => s.delete(k).catch(() => void 0)));
 }

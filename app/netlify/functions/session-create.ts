@@ -10,6 +10,7 @@ import {
   randomCode,
   randomToken,
   saveMeta,
+  sha256Hex,
 } from "./_lib.ts";
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
@@ -21,12 +22,16 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
 
   const code = randomCode();
   const teacherToken = randomToken();
+  const teacherHash = body.teacherPassphrase
+    ? await sha256Hex(`${code}:${body.teacherPassphrase}`)
+    : null;
 
   const meta: SessionMeta = {
     code,
     gridSize: body.gridSize,
     nDistricts: body.nDistricts,
     teacherToken,
+    teacherHash,
     status: "lobby",
     currentRound: 0,
     totalRounds: body.totalRounds,

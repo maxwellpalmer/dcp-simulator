@@ -16,7 +16,8 @@ export interface SessionMeta {
   code: string;
   gridSize: "70" | "140";
   nDistricts: number;
-  teacherToken: string; // random, returned to teacher at create time
+  teacherToken: string; // random; always valid for teacher auth
+  teacherHash: string | null; // sha256(passphrase) if set; alternative auth
   status: SessionStatus;
   currentRound: number;
   totalRounds: number;
@@ -42,11 +43,15 @@ export interface RoundState {
 }
 
 export interface SessionStateResponse {
-  session: Omit<SessionMeta, "teacherToken">;
+  session: Omit<SessionMeta, "teacherToken" | "teacherHash">;
   students: Student[];
   round: RoundState | null;
   partnerId: string | null;
   combineTarget: { definerId: string; assignment: number[] } | null;
+  // Compact summaries of all rounds so far (define+combine assignments +
+  // voter params). Used by the teacher dashboard to compute the cumulative
+  // scoreboard. Students ignore this.
+  allRounds: RoundState[];
 }
 
 export interface DistrictResultStat {
@@ -65,6 +70,7 @@ export interface CreateSessionRequest {
   totalRounds: number;
   voterDist: DistributionMode;
   voterSeed: number;
+  teacherPassphrase?: string; // optional; if set, dashboard requires it
 }
 
 export interface CreateSessionResponse {
@@ -81,9 +87,14 @@ export interface JoinSessionResponse {
   studentId: string;
 }
 
-export interface StartRoundRequest {
+// Teacher-auth: provide either teacherToken (URL-bookmarked) or teacherPassphrase.
+export interface TeacherAuth {
+  teacherToken?: string;
+  teacherPassphrase?: string;
+}
+
+export interface StartRoundRequest extends TeacherAuth {
   code: string;
-  teacherToken: string;
   voterDist?: DistributionMode;
   voterSeed?: number;
 }
@@ -100,7 +111,14 @@ export interface SubmitCombineRequest {
   pairing: [number, number][];
 }
 
-export interface AdvanceRequest {
+export interface AdvanceRequest extends TeacherAuth {
   code: string;
-  teacherToken: string;
+}
+
+export interface EndSessionRequest extends TeacherAuth {
+  code: string;
+}
+
+export interface VerifyTeacherRequest extends TeacherAuth {
+  code: string;
 }

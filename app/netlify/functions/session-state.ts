@@ -3,6 +3,7 @@ import type { SessionStateResponse } from "../../shared/session.ts";
 import {
   errorResponse,
   json,
+  loadAllRounds,
   loadMeta,
   loadRound,
   loadStudents,
@@ -41,9 +42,13 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
     }
   }
 
-  // Strip teacherToken before sending to any client
-  const { teacherToken: _, ...sessionSafe } = meta;
-  void _;
+  const allRounds = meta.currentRound > 0
+    ? await loadAllRounds(code, meta.currentRound)
+    : [];
+
+  // Strip teacher auth material before sending to any client
+  const { teacherToken: _tt, teacherHash: _th, ...sessionSafe } = meta;
+  void _tt; void _th;
 
   const resp: SessionStateResponse = {
     session: sessionSafe,
@@ -51,6 +56,7 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
     round,
     partnerId,
     combineTarget,
+    allRounds,
   };
   return json(resp);
 };
