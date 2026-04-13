@@ -59,6 +59,7 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
       if (e.target instanceof HTMLInputElement) return;
       if (e.key === "ArrowRight" || e.key === "]") setCurrent((d) => (d % nSub) + 1);
       else if (e.key === "ArrowLeft" || e.key === "[") setCurrent((d) => ((d - 2 + nSub) % nSub) + 1);
+      else if (e.key === "v" || e.key === "V") runValidate();
       else if (e.key === "Escape") setErrors(null);
       else if (/^[1-9]$/.test(e.key)) {
         const n = Number(e.key);
@@ -69,13 +70,17 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [nSub]);
 
-  const submit = async () => {
+  const runValidate = () => {
     const errs = validatePlan(grid, assignment, {
       nDistricts: nSub,
       requireDoughnutFree: true,
     });
     setErrors(errs);
-    if (errs.length > 0) return;
+    return errs.length === 0;
+  };
+
+  const submit = async () => {
+    if (!runValidate()) return;
     setSubmitting(true);
     try {
       await api.submitDefine({
@@ -123,7 +128,9 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
           <h3 className="font-semibold mb-1">Sub-district stats</h3>
           <StatsTable stats={stats} expectedPop={expectedPop} />
         </section>
-        <section className="flex gap-2">
+        <section className="flex gap-2 flex-wrap">
+          <button onClick={runValidate}
+                  className="px-3 py-2 rounded border text-sm">Validate (v)</button>
           <button onClick={submit} disabled={submitting}
                   className="px-3 py-2 rounded bg-black text-white text-sm">
             {submitting ? "Submitting..." : "Submit for combine"}
@@ -131,11 +138,15 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
           <button onClick={() => setAssignment(new Map())}
                   className="px-3 py-2 rounded border text-sm">Reset</button>
         </section>
-        {errors && errors.length > 0 && (
-          <section className="p-3 rounded text-sm bg-red-100 text-red-900">
-            <ul className="list-disc pl-5 space-y-1">
-              {errors.map((e, i) => <li key={i}>{e.message}</li>)}
-            </ul>
+        {errors && (
+          <section className={`p-3 rounded text-sm ${errors.length === 0 ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"}`}>
+            {errors.length === 0 ? (
+              <div className="font-semibold">Plan is valid ✓</div>
+            ) : (
+              <ul className="list-disc pl-5 space-y-1">
+                {errors.map((e, i) => <li key={i}>{e.message}</li>)}
+              </ul>
+            )}
           </section>
         )}
       </aside>
