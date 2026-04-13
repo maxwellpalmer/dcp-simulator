@@ -20,6 +20,13 @@ export function UniMode({ grid, nDistricts }: Props) {
   const [seed, setSeed] = useState(1);
   const [errors, setErrors] = useState<ValidationError[] | null>(null);
 
+  // Reset assignment when grid or district count changes (prior plan is invalid).
+  useEffect(() => {
+    setAssignment(new Map());
+    setCurrent(1);
+    setErrors(null);
+  }, [grid, nDistricts]);
+
   const voters = useMemo(
     () => generateVoters(grid, { mode: dist, seed }),
     [grid, dist, seed],
