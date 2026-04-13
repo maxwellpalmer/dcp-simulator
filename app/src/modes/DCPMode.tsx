@@ -231,7 +231,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
     for (const b of grid.blocks) {
       const sub = assignment.get(b.id) ?? UNASSIGNED;
       if (stage === "define") m.set(b.id, sub);
-      else m.set(b.id, subToFinal.get(sub) ?? sub);
+      else m.set(b.id, subToFinal.get(sub) ?? 0);
     }
     return m;
   }, [grid, assignment, stage, subToFinal]);
