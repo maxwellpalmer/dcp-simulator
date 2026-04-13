@@ -165,7 +165,7 @@ export function MapView({
               x2={ln.x2}
               y2={ln.y2}
               stroke="#111"
-              strokeWidth={0.05}
+              strokeWidth={0.04}
               strokeLinecap="round"
               pointerEvents="none"
             />
@@ -193,7 +193,7 @@ export function MapView({
               x2={ln.x2}
               y2={ln.y2}
               stroke="#111"
-              strokeWidth={0.09}
+              strokeWidth={0.08}
               strokeLinecap="round"
               pointerEvents="none"
             />

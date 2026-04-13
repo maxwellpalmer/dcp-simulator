@@ -231,7 +231,12 @@ export function DCPMode({ grid, nDistricts }: Props) {
     for (const b of grid.blocks) {
       const sub = assignment.get(b.id) ?? UNASSIGNED;
       if (stage === "define") m.set(b.id, sub);
-      else m.set(b.id, subToFinal.get(sub) ?? 0);
+      else {
+        // Paired: group by final district. Unpaired: group by sub-district
+        // (offset so it can't collide with final-district ids).
+        const finalD = subToFinal.get(sub);
+        m.set(b.id, finalD !== undefined ? finalD : 1000 + sub);
+      }
     }
     return m;
   }, [grid, assignment, stage, subToFinal]);
