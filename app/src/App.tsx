@@ -48,23 +48,26 @@ export default function App() {
     <div className="h-full flex flex-col">
       <header className="flex items-center gap-4 px-4 py-2 border-b bg-gray-50 flex-wrap">
         <h1 className="font-semibold">DCP Simulator</h1>
-        <div className="flex gap-1 text-sm">
-          <button onClick={() => setMode("uni")}
+        <nav role="tablist" aria-label="Modes" className="flex gap-1 text-sm">
+          <button role="tab" aria-selected={mode === "uni"}
+                  onClick={() => setMode("uni")}
                   className={`px-3 py-1 rounded border ${mode === "uni" ? "bg-black text-white" : ""}`}>
             Uni (solo)
           </button>
-          <button onClick={() => {
+          <button role="tab" aria-selected={mode === "dcp"}
+                  onClick={() => {
                     setMode("dcp");
                     if (!dcpOptions.includes(nDistricts)) setNDistricts(dcpOptions[0]);
                   }}
                   className={`px-3 py-1 rounded border ${mode === "dcp" ? "bg-black text-white" : ""}`}>
             DCP (solo)
           </button>
-          <button onClick={() => setMode("session")}
+          <button role="tab" aria-selected={mode === "session"}
+                  onClick={() => setMode("session")}
                   className={`px-3 py-1 rounded border ${mode === "session" ? "bg-black text-white" : ""}`}>
             Classroom session
           </button>
-        </div>
+        </nav>
 
         {mode !== "session" && (
           <div className="flex items-center gap-2 text-sm">
@@ -88,7 +91,7 @@ export default function App() {
           </div>
         )}
       </header>
-      <main className="flex-1 min-h-0">
+      <main className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
         {mode === "uni" && <UniMode grid={grid} nDistricts={nDistricts} />}
         {mode === "dcp" && <DCPMode grid={grid} nDistricts={nDistricts} />}
         {mode === "session" && <MultiplayerMode />}

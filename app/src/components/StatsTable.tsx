@@ -10,7 +10,7 @@ interface Props {
 export function StatsTable({ stats, expectedPop }: Props) {
   const seats = seatCount(stats);
   return (
-    <div className="text-sm">
+    <div className="text-sm overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>
           <tr className="text-left text-gray-600">

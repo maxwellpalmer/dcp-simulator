@@ -294,7 +294,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
   // ---- Render ----
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-0 flex items-center justify-center">
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
         <MapView
           grid={grid}
           blockColors={blockColors}
@@ -312,8 +312,8 @@ export function DCPMode({ grid, nDistricts }: Props) {
       </div>
 
       <aside className="w-full md:w-96 flex flex-col gap-4">
-        <nav className="flex gap-2 text-sm">
-          <button
+        <nav role="tablist" aria-label="DCP stages" className="flex gap-2 text-sm">
+          <button role="tab" aria-selected={stage === "define"}
             onClick={() => setStage("define")}
             className={`px-3 py-1 rounded border ${
               stage === "define" ? "bg-black text-white" : ""
@@ -321,7 +321,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
           >
             1. Define
           </button>
-          <button
+          <button role="tab" aria-selected={stage === "combine"}
             onClick={goToCombine}
             disabled={stage === "combine"}
             className={`px-3 py-1 rounded border ${
@@ -425,6 +425,8 @@ export function DCPMode({ grid, nDistricts }: Props) {
 
         {errors && (
           <section
+            role="alert"
+            aria-live="polite"
             className={`p-3 rounded text-sm ${
               errors.length === 0
                 ? "bg-green-100 text-green-900"

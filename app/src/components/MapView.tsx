@@ -135,7 +135,10 @@ export function MapView({
       viewBox={`${bbox.minX - padding} ${bbox.minY - padding} ${vbW} ${vbH}`}
       className="w-full h-full select-none"
       style={{ transform: "scaleY(-1)", touchAction: "none" }}
+      role="img"
+      aria-label={`District map with ${grid.blocks.length} blocks.`}
     >
+      <title>District map ({grid.blocks.length} blocks)</title>
       {grid.blocks.map((b) => {
         const fill = blockColors.get(b.id) ?? "#f3f4f6";
         const points = b.vertices.map(([x, y]) => `${x},${y}`).join(" ");

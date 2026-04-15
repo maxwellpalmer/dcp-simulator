@@ -167,7 +167,7 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-0 flex items-center justify-center">
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
         <MapView
           grid={grid}
           blockColors={blockColors}
@@ -230,7 +230,7 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
           <StatsTable stats={finalStats} expectedPop={expectedPop} />
         </section>
         {errors && errors.length > 0 && (
-          <section className="p-3 rounded text-sm bg-red-100 text-red-900">
+          <section role="alert" aria-live="polite" className="p-3 rounded text-sm bg-red-100 text-red-900">
             <ul className="list-disc pl-5 space-y-1">
               {errors.map((e, i) => <li key={i}>{e.message}</li>)}
             </ul>

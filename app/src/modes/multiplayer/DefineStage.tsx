@@ -112,7 +112,7 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-0 flex items-center justify-center">
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
         <MapView
           grid={grid}
           blockColors={new Map(grid.blocks.map((b) => [b.id, districtColor(assignment.get(b.id) ?? UNASSIGNED)]))}
@@ -160,7 +160,7 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
                   className="px-3 py-2 rounded border text-sm">Reset</button>
         </section>
         {errors && (
-          <section className={`p-3 rounded text-sm ${errors.length === 0 ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"}`}>
+          <section role="alert" aria-live="polite" className={`p-3 rounded text-sm ${errors.length === 0 ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"}`}>
             {errors.length === 0 ? (
               <div className="font-semibold">Plan is valid ✓</div>
             ) : (

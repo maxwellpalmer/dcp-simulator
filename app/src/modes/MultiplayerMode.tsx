@@ -491,8 +491,9 @@ function LoadingScreen({ code, error }: { code: string; error: string | null }) 
 
 function OfflineChip() {
   return (
-    <span className="ml-auto flex items-center gap-1 text-xs text-amber-700 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+    <span role="status" aria-live="polite"
+          className="ml-auto flex items-center gap-1 text-xs text-amber-700 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />
       reconnecting
     </span>
   );
@@ -500,7 +501,8 @@ function OfflineChip() {
 
 function OfflineBar() {
   return (
-    <div className="bg-amber-100 border-b border-amber-300 text-amber-800 text-sm px-4 py-1">
+    <div role="status" aria-live="polite"
+         className="bg-amber-100 border-b border-amber-300 text-amber-800 text-sm px-4 py-1">
       Reconnecting to server... using last known state.
     </div>
   );

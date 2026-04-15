@@ -11,7 +11,7 @@ Last updated: 2026-04-13
 | M3 DCP solo practice | ✅ Done | Define + combine stages with perimeter outline, pair-validation, live seat counts |
 | M4 Multi-user sessions | ✅ Done | Netlify Functions + Blobs; create/join/round flow working end-to-end |
 | M5 Teacher dashboard | ✅ Done | Passphrase auth, scoreboard, round history, end-session, copy code |
-| M6 Polish | 🟡 Mostly done | Undo/redo ✅, pairing fairness ✅, end-of-session ✅, A-only scoring ✅, error UI ✅, role banners ✅. Remaining: a11y pass, mobile check. |
+| M6 Polish | ✅ Done | Undo/redo, pairing fairness, end-of-session, A-only scoring, error UI, role banners, a11y (ARIA live regions for validation/offline, tablist semantics, SVG title), mobile layout (stack + scroll + min-h). |
 | M7 Classroom dry run | ✅ Done (headless) | Node-based dry run script exercises full API with N students × R rounds; passes with 12×2 and 11×3. Browser smoke test TBD. |
 
 **Tests:** 33 unit tests passing (Vitest). Plus a headless dry-run script that drives the full session API end-to-end (12 students × 2 rounds = green). Production build: ~520 KB (incl. bundled grid JSON).
