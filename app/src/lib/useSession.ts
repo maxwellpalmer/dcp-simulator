@@ -9,10 +9,25 @@ export interface UseSessionArgs {
   studentId: string | null;
 }
 
-export function useSession({ code, studentId }: UseSessionArgs) {
+export interface UseSessionResult {
+  state: SessionStateResponse | null;
+  error: string | null;
+  loading: boolean;
+  // True if server said the session doesn't exist or ended. Client should
+  // clear local identity and offer to return to landing.
+  sessionGone: boolean;
+  // True if polling is currently failing (transient) but we still have
+  // last-known state.
+  offline: boolean;
+  refresh: () => Promise<void>;
+}
+
+export function useSession({ code, studentId }: UseSessionArgs): UseSessionResult {
   const [state, setState] = useState<SessionStateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sessionGone, setSessionGone] = useState(false);
+  const [offline, setOffline] = useState(false);
   const timerRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
@@ -21,8 +36,20 @@ export function useSession({ code, studentId }: UseSessionArgs) {
       const s = await api.getState(code, studentId ?? undefined);
       setState(s);
       setError(null);
+      setOffline(false);
+      setSessionGone(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      // Treat "Unknown session" as session gone (server already ended/deleted).
+      if (/unknown session|not found|404/i.test(msg)) {
+        setSessionGone(true);
+        setError(msg);
+        setOffline(false);
+      } else {
+        // Transient error: keep last state, show offline indicator.
+        setOffline(true);
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -41,5 +68,5 @@ export function useSession({ code, studentId }: UseSessionArgs) {
     };
   }, [code, refresh]);
 
-  return { state, error, loading, refresh };
+  return { state, error, loading, sessionGone, offline, refresh };
 }

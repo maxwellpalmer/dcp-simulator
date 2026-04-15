@@ -180,6 +180,16 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
         />
       </div>
       <aside className="w-full md:w-96 flex flex-col gap-4">
+        <section className="rounded border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm">
+          <div className="font-semibold flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-white border border-black" />
+            You are Party B
+          </div>
+          <div className="text-xs text-gray-600 mt-1">
+            Pair your partner's sub-districts to maximize B's seats. B's
+            voters are the <span className="font-medium">light dots</span>.
+          </div>
+        </section>
         <section>
           <h3 className="font-semibold mb-1">
             Combine partner's sub-districts

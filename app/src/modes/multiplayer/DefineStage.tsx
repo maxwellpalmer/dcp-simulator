@@ -125,6 +125,16 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
         />
       </div>
       <aside className="w-full md:w-80 flex flex-col gap-4">
+        <section className="rounded border border-gray-800 bg-gray-900 text-white px-3 py-2 text-sm">
+          <div className="font-semibold flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-black border border-white" />
+            You are Party A
+          </div>
+          <div className="text-xs text-gray-300 mt-1">
+            Draw sub-districts that maximize A's seats after your partner
+            pairs them. A's voters are the <span className="font-medium">dark dots</span>.
+          </div>
+        </section>
         <section>
           <h3 className="font-semibold mb-1">Define {nSub} sub-districts</h3>
           <DistrictPicker nDistricts={nSub} current={current} onPick={setCurrent} labels={subDistrictLabel} />
