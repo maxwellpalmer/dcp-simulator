@@ -10,7 +10,7 @@ import {
   loadStudents,
   requireTeacher,
   saveMeta,
-  saveRound,
+  saveRoundMeta,
   shuffle,
 } from "./_lib.ts";
 
@@ -77,7 +77,7 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
     combines: {},
   };
   void sitter;
-  await saveRound(body.code, round);
+  await saveRoundMeta(body.code, round);
 
   meta.currentRound = nextRound;
   meta.status = "round";

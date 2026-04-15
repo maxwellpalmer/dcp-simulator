@@ -28,20 +28,105 @@ export async function saveStudents(code: string, list: Student[]): Promise<void>
   await store().setJSON(`session/${code}/students`, list);
 }
 
+// Round storage is split across multiple blob keys so concurrent student
+// submissions don't clobber each other:
+//   session/{code}/round/{n}/meta       → metadata only (no defines/combines)
+//   session/{code}/round/{n}/define/{studentId}   → single student's define
+//   session/{code}/round/{n}/combine/{studentId}  → single student's combine
+//
+// loadRound() reassembles the full RoundState from these pieces.
+
+interface RoundMeta {
+  round: number;
+  status: RoundState["status"];
+  voterDist: RoundState["voterDist"];
+  voterSeed: number;
+  pairings: [string, string][] | null;
+}
+
 export async function loadRound(
   code: string,
   n: number,
 ): Promise<RoundState | null> {
-  return (await store().get(`session/${code}/round/${n}`, { type: "json" })) as
-    | RoundState
+  const s = store();
+  const meta = (await s.get(`session/${code}/round/${n}/meta`, { type: "json" })) as
+    | RoundMeta
     | null;
+  if (!meta) return null;
+
+  const defines: Record<string, number[]> = {};
+  const combines: Record<string, { definerId: string; pairing: [number, number][] }> = {};
+  const pairedIds = (meta.pairings ?? []).flatMap(([a, b]) => [a, b]);
+  await Promise.all(
+    pairedIds.map(async (id) => {
+      const d = (await s.get(`session/${code}/round/${n}/define/${id}`, { type: "json" })) as
+        | number[]
+        | null;
+      if (d) defines[id] = d;
+      const c = (await s.get(`session/${code}/round/${n}/combine/${id}`, { type: "json" })) as
+        | { definerId: string; pairing: [number, number][] }
+        | null;
+      if (c) combines[id] = c;
+    }),
+  );
+
+  // Recompute status from contents (cheap, and robust to races).
+  let status: RoundState["status"] = meta.status;
+  if (pairedIds.length > 0) {
+    const allDefined = pairedIds.every((id) => defines[id]);
+    const allCombined = pairedIds.every((id) => combines[id]);
+    if (allCombined) status = "done";
+    else if (allDefined) status = "combine";
+    else status = "define";
+  }
+
+  return {
+    round: meta.round,
+    status,
+    voterDist: meta.voterDist,
+    voterSeed: meta.voterSeed,
+    pairings: meta.pairings,
+    defines,
+    combines,
+  };
 }
 
-export async function saveRound(
+export async function saveRoundMeta(
   code: string,
   round: RoundState,
 ): Promise<void> {
-  await store().setJSON(`session/${code}/round/${round.round}`, round);
+  const meta: RoundMeta = {
+    round: round.round,
+    status: round.status,
+    voterDist: round.voterDist,
+    voterSeed: round.voterSeed,
+    pairings: round.pairings,
+  };
+  await store().setJSON(`session/${code}/round/${round.round}/meta`, meta);
+}
+
+export async function saveStudentDefine(
+  code: string,
+  n: number,
+  studentId: string,
+  assignment: number[],
+): Promise<void> {
+  await store().setJSON(
+    `session/${code}/round/${n}/define/${studentId}`,
+    assignment,
+  );
+}
+
+export async function saveStudentCombine(
+  code: string,
+  n: number,
+  studentId: string,
+  combine: { definerId: string; pairing: [number, number][] },
+): Promise<void> {
+  await store().setJSON(
+    `session/${code}/round/${n}/combine/${studentId}`,
+    combine,
+  );
 }
 
 // Session code: 5 chars, unambiguous alphabet (no O/0/I/L/1).
@@ -131,9 +216,14 @@ export async function loadAllRounds(
 export async function deleteSession(code: string): Promise<void> {
   const s = store();
   const prefix = `session/${code}/`;
-  // Netlify Blobs has no delete-by-prefix; iterate common keys.
-  const keys = [`${prefix}meta`, `${prefix}students`];
-  // Assume up to 20 rounds
-  for (let i = 1; i <= 20; i++) keys.push(`${prefix}round/${i}`);
-  await Promise.all(keys.map((k) => s.delete(k).catch(() => void 0)));
+  // Use list() to clean up every key under the session prefix.
+  try {
+    const { blobs } = await s.list({ prefix });
+    await Promise.all(blobs.map((b) => s.delete(b.key).catch(() => void 0)));
+  } catch {
+    // Fallback: delete common known keys
+    const keys = [`${prefix}meta`, `${prefix}students`];
+    for (let i = 1; i <= 20; i++) keys.push(`${prefix}round/${i}/meta`);
+    await Promise.all(keys.map((k) => s.delete(k).catch(() => void 0)));
+  }
 }

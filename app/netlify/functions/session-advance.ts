@@ -2,7 +2,7 @@
 // Used to end a round early, or to move from "results" back to a new round.
 import type { Context } from "@netlify/functions";
 import type { AdvanceRequest } from "../../shared/session.ts";
-import { errorResponse, json, loadRound, requireTeacher, saveMeta, saveRound } from "./_lib.ts";
+import { errorResponse, json, loadRound, requireTeacher, saveMeta, saveRoundMeta } from "./_lib.ts";
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (req.method !== "POST") return errorResponse("POST only", 405);
@@ -15,7 +15,7 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
     const round = await loadRound(body.code, meta.currentRound);
     if (round && round.status !== "done") {
       round.status = "done";
-      await saveRound(body.code, round);
+      await saveRoundMeta(body.code, round);
     }
   }
   meta.status = "results";

@@ -5,7 +5,8 @@ import {
   json,
   loadMeta,
   loadRound,
-  saveRound,
+  saveRoundMeta,
+  saveStudentDefine,
 } from "./_lib.ts";
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
@@ -17,24 +18,29 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (!round) return errorResponse("No active round", 400);
   if (round.status !== "define") return errorResponse("Define stage closed", 400);
 
-  // Student must be in a pairing for this round
   const paired =
     round.pairings?.some(
       ([a, b]) => a === body.studentId || b === body.studentId,
     ) ?? false;
   if (!paired) return errorResponse("You are not paired this round", 400);
 
-  round.defines[body.studentId] = body.assignment;
+  // Write this student's define under its own key — no read-modify-write
+  // on the shared round blob, so concurrent submissions don't clobber.
+  await saveStudentDefine(
+    body.code,
+    meta.currentRound,
+    body.studentId,
+    body.assignment,
+  );
 
-  // If every paired student has submitted, advance to combine stage.
-  const pairedIds = round.pairings
-    ? round.pairings.flatMap(([a, b]) => [a, b])
-    : [];
-  const allSubmitted = pairedIds.every((id) => round.defines[id]);
-  if (allSubmitted) round.status = "combine";
-
-  await saveRound(body.code, round);
-  return json({ ok: true, roundStatus: round.status });
+  // Re-load the round (cheap per-key fetch) to see if everyone has finished
+  // and advance the stored status if so. loadRound also recomputes status
+  // from contents, so this is just to persist the status transition.
+  const fresh = await loadRound(body.code, meta.currentRound);
+  if (fresh && fresh.status !== round.status) {
+    await saveRoundMeta(body.code, fresh);
+  }
+  return json({ ok: true, roundStatus: fresh?.status ?? round.status });
 };
 
 export const config = { path: "/api/session/submit-define" };

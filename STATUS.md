@@ -11,10 +11,10 @@ Last updated: 2026-04-13
 | M3 DCP solo practice | ✅ Done | Define + combine stages with perimeter outline, pair-validation, live seat counts |
 | M4 Multi-user sessions | ✅ Done | Netlify Functions + Blobs; create/join/round flow working end-to-end |
 | M5 Teacher dashboard | ✅ Done | Passphrase auth, scoreboard, round history, end-session, copy code |
-| M6 Polish | ⬜ Pending | Undo/redo, a11y, end-of-session summary, mobile layout check |
-| M7 Classroom dry run | ⬜ Pending | 12-tab simulation, 2 rounds, verify dashboard |
+| M6 Polish | 🟡 Mostly done | Undo/redo ✅, pairing fairness ✅, end-of-session ✅, A-only scoring ✅, error UI ✅, role banners ✅. Remaining: a11y pass, mobile check. |
+| M7 Classroom dry run | ✅ Done (headless) | Node-based dry run script exercises full API with N students × R rounds; passes with 12×2 and 11×3. Browser smoke test TBD. |
 
-**Tests:** 27 unit tests passing (Vitest). Production build: ~505 KB (incl. bundled grid JSON).
+**Tests:** 33 unit tests passing (Vitest). Plus a headless dry-run script that drives the full session API end-to-end (12 students × 2 rounds = green). Production build: ~520 KB (incl. bundled grid JSON).
 
 ## What works now
 
@@ -67,6 +67,7 @@ STATUS.md         This file
 - `npm run dev` (vite only) works for Uni and DCP solo modes — no API needed.
 - `npm run dev:session` (netlify dev) starts both Vite and the Netlify Functions at http://localhost:8888. Required for Classroom mode.
 - `npm run test` runs the Vitest unit suite.
+- `npm run test:dryrun` (requires `netlify dev` running in another terminal) simulates a full classroom session against the local server. Env: `STUDENTS=12 ROUNDS=2 BASE=http://localhost:8888`.
 - Asset regeneration: `Rscript scripts/generate_grids.R all` (from repo root). Only needed if grid geometry or district options change.
 
 ## Known gaps / caveats

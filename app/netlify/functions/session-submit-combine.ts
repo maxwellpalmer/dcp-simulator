@@ -5,7 +5,8 @@ import {
   json,
   loadMeta,
   loadRound,
-  saveRound,
+  saveRoundMeta,
+  saveStudentCombine,
 } from "./_lib.ts";
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
@@ -17,7 +18,6 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (!round) return errorResponse("No active round", 400);
   if (round.status !== "combine") return errorResponse("Not in combine stage", 400);
 
-  // Find this student's partner
   let partnerId: string | null = null;
   for (const [a, b] of round.pairings ?? []) {
     if (a === body.studentId) { partnerId = b; break; }
@@ -25,19 +25,16 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
   }
   if (!partnerId) return errorResponse("Not in a pairing this round", 400);
 
-  round.combines[body.studentId] = {
+  await saveStudentCombine(body.code, meta.currentRound, body.studentId, {
     definerId: partnerId,
     pairing: body.pairing,
-  };
+  });
 
-  const pairedIds = round.pairings
-    ? round.pairings.flatMap(([a, b]) => [a, b])
-    : [];
-  const allDone = pairedIds.every((id) => round.combines[id]);
-  if (allDone) round.status = "done";
-
-  await saveRound(body.code, round);
-  return json({ ok: true, roundStatus: round.status });
+  const fresh = await loadRound(body.code, meta.currentRound);
+  if (fresh && fresh.status !== round.status) {
+    await saveRoundMeta(body.code, fresh);
+  }
+  return json({ ok: true, roundStatus: fresh?.status ?? round.status });
 };
 
 export const config = { path: "/api/session/submit-combine" };
