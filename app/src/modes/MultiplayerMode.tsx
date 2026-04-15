@@ -13,6 +13,7 @@ import { useSession } from "../lib/useSession";
 import { DefineStage } from "./multiplayer/DefineStage";
 import { CombineStage } from "./multiplayer/CombineStage";
 import { ResultsView } from "./multiplayer/ResultsView";
+import { SessionSummary } from "./multiplayer/SessionSummary";
 import { TeacherPanel } from "./multiplayer/TeacherPanel";
 import type { DistributionMode } from "../../shared/session";
 
@@ -366,9 +367,18 @@ function StudentView({
   const grid = GRIDS[state.session.gridSize];
   const round = state.round;
 
+  // Student is in a pairing this round?
+  const isPaired =
+    !!round?.pairings?.some(([a, b]) => a === student.id || b === student.id);
+
+  const sessionDone =
+    state.session.status === "ended" ||
+    (state.session.currentRound >= state.session.totalRounds &&
+      round?.status === "done");
+
   return (
     <div className="p-4 h-full flex flex-col">
-      <header className="flex items-center gap-4 pb-3 border-b text-sm">
+      <header className="flex items-center gap-4 pb-3 border-b text-sm flex-wrap">
         <span className="font-semibold">Session {code}</span>
         <span>You: {student.name}</span>
         <span>Round {state.session.currentRound}/{state.session.totalRounds}</span>
@@ -377,23 +387,26 @@ function StudentView({
       </header>
 
       <main className="flex-1 min-h-0">
-        {state.session.status === "lobby" && (
+        {sessionDone ? (
+          <SessionSummary grid={grid} state={state} student={student} />
+        ) : state.session.status === "lobby" ? (
           <Lobby state={state} />
-        )}
-        {round && round.status === "define" && (
+        ) : round && !isPaired ? (
+          <Waiting message="You're sitting out this round. Results will show when it ends." />
+        ) : round && round.status === "define" ? (
           <DefineStage grid={grid} state={state} student={student}
                        onSubmitted={refresh} />
-        )}
-        {round && round.status === "combine" && (
+        ) : round && round.status === "combine" ? (
           state.combineTarget ? (
             <CombineStage grid={grid} state={state} student={student}
                           onSubmitted={refresh} />
           ) : (
             <Waiting message="Waiting for your partner to finish defining..." />
           )
-        )}
-        {round && round.status === "done" && (
+        ) : round && round.status === "done" ? (
           <ResultsView grid={grid} state={state} student={student} />
+        ) : (
+          <Waiting message="Loading round..." />
         )}
       </main>
     </div>
