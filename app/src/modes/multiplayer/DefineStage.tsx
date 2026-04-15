@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useHistoryState, useUndoShortcuts } from "../../lib/useHistoryState";
 import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../../lib/types";
 import { UNASSIGNED } from "../../lib/types";
 import { MapView } from "../../components/MapView";
@@ -24,7 +25,10 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
   const round = state.round!;
   const nSub = state.session.nDistricts * 2;
   const alreadySubmitted = !!round.defines[student.id];
-  const [assignment, setAssignment] = useState<Assignment>(() => new Map());
+  const history = useHistoryState<Assignment>(new Map());
+  const assignment = history.state;
+  const setAssignment = history.set;
+  useUndoShortcuts(history);
   const [current, setCurrent] = useState<DistrictId>(1);
   const [errors, setErrors] = useState<ValidationError[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -117,6 +121,7 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
           showVoters
           paintCurrent={current}
           onSetBlock={handleSetBlock}
+          onInteractionStart={history.commit}
         />
       </div>
       <aside className="w-full md:w-80 flex flex-col gap-4">
@@ -135,7 +140,13 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
                   className="px-3 py-2 rounded bg-black text-white text-sm">
             {submitting ? "Submitting..." : "Submit for combine"}
           </button>
-          <button onClick={() => setAssignment(new Map())}
+          <button onClick={history.undo} disabled={!history.canUndo}
+                  title="Undo (⌘/Ctrl+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
+          <button onClick={history.redo} disabled={!history.canRedo}
+                  title="Redo (⌘/Ctrl+Shift+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
+          <button onClick={() => { history.commit(); setAssignment(new Map()); }}
                   className="px-3 py-2 rounded border text-sm">Reset</button>
         </section>
         {errors && (

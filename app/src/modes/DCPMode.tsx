@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useHistoryState } from "../lib/useHistoryState";
 import type {
   Assignment,
   BlockId,
@@ -37,22 +38,47 @@ export function DCPMode({ grid, nDistricts }: Props) {
   const nSub = nDistricts * 2;
   const [stage, setStage] = useState<Stage>("define");
 
-  const [assignment, setAssignment] = useState<Assignment>(() => new Map());
+  // Two separate histories — one for the define-stage assignment, one for
+  // the combine-stage pairing. The active stage gets keyboard undo.
+  const asgHistory = useHistoryState<Assignment>(new Map());
+  const assignment = asgHistory.state;
+  const setAssignment = asgHistory.set;
+  const pairHistory = useHistoryState<Pairing>([]);
+  const pairing = pairHistory.state;
+  const setPairing = pairHistory.set;
   const [current, setCurrent] = useState<DistrictId>(1);
-  const [pairing, setPairing] = useState<Pairing>([]);
   const [pendingPick, setPendingPick] = useState<DistrictId | null>(null);
+
+  // ⌘/Ctrl+Z applies to the active stage's history.
+  useEffect(() => {
+    const h = stage === "define" ? asgHistory : pairHistory;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "z" || e.key === "Z") {
+        e.preventDefault();
+        if (e.shiftKey) h.redo(); else h.undo();
+      } else if (e.key === "y" || e.key === "Y") {
+        e.preventDefault();
+        h.redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [stage, asgHistory, pairHistory]);
 
   const [dist, setDist] = useState<DistributionMode>("random");
   const [seed, setSeed] = useState(1);
   const [errors, setErrors] = useState<ValidationError[] | null>(null);
 
   useEffect(() => {
-    setAssignment(new Map());
-    setPairing([]);
+    asgHistory.reset(new Map());
+    pairHistory.reset([]);
     setPendingPick(null);
     setCurrent(1);
     setErrors(null);
     setStage("define");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grid, nDistricts]);
 
   const voters = useMemo(
@@ -74,6 +100,8 @@ export function DCPMode({ grid, nDistricts }: Props) {
   );
 
   const resetAll = () => {
+    asgHistory.commit();
+    pairHistory.commit();
     setAssignment(new Map());
     setPairing([]);
     setPendingPick(null);
@@ -86,6 +114,8 @@ export function DCPMode({ grid, nDistricts }: Props) {
     const plan = plans[Math.floor(Math.random() * plans.length)];
     const m: Assignment = new Map();
     plan.forEach((d, i) => m.set(grid.blocks[i].id, d));
+    asgHistory.commit();
+    pairHistory.commit();
     setAssignment(m);
     setPairing([]);
     setPendingPick(null);
@@ -134,37 +164,29 @@ export function DCPMode({ grid, nDistricts }: Props) {
   const handleSubClick = useCallback(
     (sub: DistrictId) => {
       if (sub === UNASSIGNED) return;
-      // If this sub is already paired, unpair it
       const pairIdx = pairing.findIndex((p) => p[0] === sub || p[1] === sub);
       if (pairIdx >= 0) {
+        pairHistory.commit();
         setPairing((p) => p.filter((_, i) => i !== pairIdx));
         setPendingPick(null);
         setErrors(null);
         return;
       }
-      if (pendingPick === null) {
-        setPendingPick(sub);
-        return;
-      }
-      if (pendingPick === sub) {
-        setPendingPick(null);
-        return;
-      }
-      // Try to pair pendingPick + sub, must be adjacent and both unpaired
+      if (pendingPick === null) { setPendingPick(sub); return; }
+      if (pendingPick === sub) { setPendingPick(null); return; }
       if (!candidateSubs.has(sub)) {
-        setErrors([
-          {
-            code: "NOT_CONTIGUOUS",
-            message: `${subDistrictLabel(pendingPick)} and ${subDistrictLabel(sub)} are not adjacent.`,
-          },
-        ]);
+        setErrors([{
+          code: "NOT_CONTIGUOUS",
+          message: `${subDistrictLabel(pendingPick)} and ${subDistrictLabel(sub)} are not adjacent.`,
+        }]);
         return;
       }
+      pairHistory.commit();
       setPairing((p) => [...p, [pendingPick, sub]]);
       setPendingPick(null);
       setErrors(null);
     },
-    [pairing, pendingPick, candidateSubs],
+    [pairing, pendingPick, candidateSubs, pairHistory, setPairing],
   );
 
   const onBlockClickInCombine = useCallback(
@@ -282,6 +304,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
           paintCurrent={stage === "define" ? current : undefined}
           onSetBlock={stage === "define" ? handleSetBlock : undefined}
           onBlockClick={stage === "combine" ? onBlockClickInCombine : undefined}
+          onInteractionStart={stage === "define" ? asgHistory.commit : undefined}
           labels={labels}
           perimeterBlocks={perimeterBlocks}
           dimmedBlocks={dimmedBlocks}
@@ -331,6 +354,12 @@ export function DCPMode({ grid, nDistricts }: Props) {
 
             <section className="flex gap-2 flex-wrap">
               <button onClick={validateDefine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate (v)</button>
+              <button onClick={asgHistory.undo} disabled={!asgHistory.canUndo}
+                      title="Undo (⌘/Ctrl+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
+              <button onClick={asgHistory.redo} disabled={!asgHistory.canRedo}
+                      title="Redo (⌘/Ctrl+Shift+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
               <button onClick={goToCombine} className="px-3 py-1 rounded border text-sm">Next: Combine →</button>
               <button onClick={loadRandom} className="px-3 py-1 rounded border text-sm">Random plan</button>
               <button onClick={resetAll} className="px-3 py-1 rounded border text-sm">Reset</button>
@@ -374,7 +403,14 @@ export function DCPMode({ grid, nDistricts }: Props) {
 
             <section className="flex gap-2 flex-wrap">
               <button onClick={validateCombine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate</button>
-              <button onClick={() => setPairing([])} className="px-3 py-1 rounded border text-sm">Clear pairings</button>
+              <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
+                      title="Undo (⌘/Ctrl+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
+              <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
+                      title="Redo (⌘/Ctrl+Shift+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
+              <button onClick={() => { pairHistory.commit(); setPairing([]); }}
+                      className="px-3 py-1 rounded border text-sm">Clear pairings</button>
               <button onClick={() => setStage("define")} className="px-3 py-1 rounded border text-sm">← Back to define</button>
             </section>
 

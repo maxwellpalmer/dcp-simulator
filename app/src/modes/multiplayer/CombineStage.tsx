@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useHistoryState, useUndoShortcuts } from "../../lib/useHistoryState";
 import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../../lib/types";
 import { UNASSIGNED } from "../../lib/types";
 import { MapView } from "../../components/MapView";
@@ -41,7 +42,10 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
     [grid, round.voterDist, round.voterSeed],
   );
 
-  const [pairing, setPairing] = useState<Pairing>([]);
+  const pairHistory = useHistoryState<Pairing>([]);
+  const pairing = pairHistory.state;
+  const setPairing = pairHistory.set;
+  useUndoShortcuts(pairHistory);
   const [pendingPick, setPendingPick] = useState<DistrictId | null>(null);
   const [errors, setErrors] = useState<ValidationError[] | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -62,25 +66,24 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
       if (sub === UNASSIGNED) return;
       const pairIdx = pairing.findIndex((p) => p[0] === sub || p[1] === sub);
       if (pairIdx >= 0) {
+        pairHistory.commit();
         setPairing((p) => p.filter((_, i) => i !== pairIdx));
         setPendingPick(null);
         setErrors(null);
         return;
       }
-      if (pendingPick === null) {
-        setPendingPick(sub);
-        return;
-      }
+      if (pendingPick === null) { setPendingPick(sub); return; }
       if (pendingPick === sub) { setPendingPick(null); return; }
       if (!candidateSubs.has(sub)) {
         setErrors([{ code: "NOT_CONTIGUOUS", message: `${subDistrictLabel(pendingPick)} and ${subDistrictLabel(sub)} are not adjacent.` }]);
         return;
       }
+      pairHistory.commit();
       setPairing((p) => [...p, [pendingPick, sub]]);
       setPendingPick(null);
       setErrors(null);
     },
-    [pairing, pendingPick, candidateSubs],
+    [pairing, pendingPick, candidateSubs, pairHistory, setPairing],
   );
 
   const onBlockClick = useCallback(
@@ -198,12 +201,18 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
             ))}
           </ul>
         </section>
-        <section className="flex gap-2">
+        <section className="flex gap-2 flex-wrap">
           <button onClick={submit} disabled={submitting}
                   className="px-3 py-2 rounded bg-black text-white text-sm">
             {submitting ? "Submitting..." : "Submit"}
           </button>
-          <button onClick={() => { setPairing([]); setPendingPick(null); }}
+          <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
+                  title="Undo (⌘/Ctrl+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
+          <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
+                  title="Redo (⌘/Ctrl+Shift+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
+          <button onClick={() => { pairHistory.commit(); setPairing([]); setPendingPick(null); }}
                   className="px-3 py-2 rounded border text-sm">Clear</button>
         </section>
         <section>

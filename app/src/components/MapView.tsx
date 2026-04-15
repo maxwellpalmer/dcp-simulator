@@ -25,6 +25,10 @@ interface Props {
   onSetBlock?: (block: BlockId, district: DistrictId | null) => void;
   // Click-mode fallback (combine stage). Called on single click; no drag.
   onBlockClick?: (block: BlockId) => void;
+  // Fired once at pointerdown before any set/click event. Use to snapshot
+  // history so the entire interaction (e.g., a drag stroke) can be undone
+  // as one step.
+  onInteractionStart?: () => void;
   // Optional overlays for combine stage.
   labels?: SubLabel[];
   highlightedBlocks?: Set<BlockId>;
@@ -51,6 +55,7 @@ export function MapView({
   dimmedBlocks,
   boundaryGroup,
   perimeterBlocks,
+  onInteractionStart,
 }: Props) {
   const bbox = useMemo(() => computeBbox(grid), [grid]);
 
@@ -85,6 +90,7 @@ export function MapView({
 
   const handlePointerDown = (id: BlockId) => (e: React.PointerEvent) => {
     e.preventDefault();
+    onInteractionStart?.();
     if (paintEnabled) {
       // Determine action by looking at the current color: if already "current",
       // clear; else set. We don't have assignment here, so use a separate API:

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useHistoryState, useUndoShortcuts } from "../lib/useHistoryState";
 import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../lib/types";
 import { generateVoters } from "../lib/voters";
 import type { DistributionMode } from "../lib/voters";
@@ -16,7 +17,10 @@ interface Props {
 }
 
 export function UniMode({ grid, nDistricts }: Props) {
-  const [assignment, setAssignment] = useState<Assignment>(() => new Map());
+  const history = useHistoryState<Assignment>(new Map());
+  const assignment = history.state;
+  const setAssignment = history.set;
+  useUndoShortcuts(history);
   const [current, setCurrent] = useState<DistrictId>(1);
   const [dist, setDist] = useState<DistributionMode>("random");
   const [seed, setSeed] = useState(1);
@@ -24,9 +28,10 @@ export function UniMode({ grid, nDistricts }: Props) {
 
   // Reset assignment when grid or district count changes (prior plan is invalid).
   useEffect(() => {
-    setAssignment(new Map());
+    history.reset(new Map());
     setCurrent(1);
     setErrors(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grid, nDistricts]);
 
   const voters = useMemo(
@@ -55,6 +60,7 @@ export function UniMode({ grid, nDistricts }: Props) {
   );
 
   const reset = () => {
+    history.commit();
     setAssignment(new Map());
     setErrors(null);
   };
@@ -65,6 +71,7 @@ export function UniMode({ grid, nDistricts }: Props) {
     const plan = plans[Math.floor(Math.random() * plans.length)];
     const m: Assignment = new Map();
     plan.forEach((d, i) => m.set(grid.blocks[i].id, d));
+    history.commit();
     setAssignment(m);
     setErrors(null);
   };
@@ -119,6 +126,7 @@ export function UniMode({ grid, nDistricts }: Props) {
           voters={voters}
           paintCurrent={current}
           onSetBlock={handleSetBlock}
+          onInteractionStart={history.commit}
           showVoters
         />
       </div>
@@ -154,22 +162,26 @@ export function UniMode({ grid, nDistricts }: Props) {
         </section>
 
         <section className="flex gap-2 flex-wrap">
-          <button
-            onClick={validate}
-            className="px-3 py-1 rounded bg-black text-white text-sm"
-          >
+          <button onClick={validate}
+                  className="px-3 py-1 rounded bg-black text-white text-sm">
             Validate (v)
           </button>
-          <button
-            onClick={loadRandom}
-            className="px-3 py-1 rounded border text-sm"
-          >
+          <button onClick={history.undo} disabled={!history.canUndo}
+                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+                  title="Undo (⌘/Ctrl+Z)">
+            Undo
+          </button>
+          <button onClick={history.redo} disabled={!history.canRedo}
+                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+                  title="Redo (⌘/Ctrl+Shift+Z)">
+            Redo
+          </button>
+          <button onClick={loadRandom}
+                  className="px-3 py-1 rounded border text-sm">
             Random plan
           </button>
-          <button
-            onClick={reset}
-            className="px-3 py-1 rounded border text-sm"
-          >
+          <button onClick={reset}
+                  className="px-3 py-1 rounded border text-sm">
             Reset
           </button>
         </section>
