@@ -4,6 +4,7 @@ import grid70 from "../assets/grid_70.json";
 import grid140 from "../assets/grid_140.json";
 import { api } from "../lib/api";
 import {
+  clearStudent,
   getStudent,
   getTeacherToken,
   saveStudent,
@@ -55,10 +56,27 @@ export function MultiplayerMode() {
     code ? getTeacherToken(code) : null,
   );
 
-  const { state, error, refresh } = useSession({
+  const { state, error, refresh, sessionGone, offline } = useSession({
     code,
     studentId: student?.id ?? null,
   });
+
+  // If the server says the session no longer exists, clear identity and
+  // return to landing.
+  if (code && sessionGone) {
+    return (
+      <SessionGoneNotice
+        code={code}
+        message={error}
+        onHome={() => {
+          if (student) clearStudent(code);
+          setStudent(null);
+          setTeacherTokenState(null);
+          setQuery({ code: null, role: null });
+        }}
+      />
+    );
+  }
 
   if (!code) {
     return (
@@ -90,6 +108,7 @@ export function MultiplayerMode() {
         state={state}
         refresh={refresh}
         error={error}
+        offline={offline}
       />
     );
   }
@@ -108,7 +127,31 @@ export function MultiplayerMode() {
       state={state}
       refresh={refresh}
       error={error}
+      offline={offline}
     />
+  );
+}
+
+function SessionGoneNotice({
+  code,
+  message,
+  onHome,
+}: {
+  code: string;
+  message: string | null;
+  onHome: () => void;
+}) {
+  return (
+    <div className="p-6 max-w-md mx-auto space-y-3 text-center">
+      <h2 className="text-xl font-semibold">Session {code} is no longer available</h2>
+      <p className="text-sm text-gray-600">
+        {message || "The teacher has ended the session, or the code is invalid."}
+      </p>
+      <button onClick={onHome}
+              className="px-4 py-2 rounded bg-black text-white">
+        Return to home
+      </button>
+    </div>
   );
 }
 
@@ -288,6 +331,7 @@ function TeacherView({
   state,
   refresh,
   error,
+  offline,
 }: {
   code: string;
   teacherToken: string | null;
@@ -295,6 +339,7 @@ function TeacherView({
   state: Parameters<typeof TeacherPanel>[0]["state"];
   refresh: () => void;
   error: string | null;
+  offline: boolean;
 }) {
   const [passInput, setPassInput] = useState("");
   const [tokenInput, setTokenInput] = useState("");
@@ -335,17 +380,20 @@ function TeacherView({
     );
   }
   if (!state) {
-    return <div className="p-6">Loading session {code}... {error && <span className="text-red-600">{error}</span>}</div>;
+    return <LoadingScreen code={code} error={error} />;
   }
   const grid = GRIDS[state.session.gridSize];
   return (
-    <TeacherPanel
-      code={code}
-      teacherToken={teacherToken}
-      state={state}
-      grid={grid}
-      refresh={refresh}
-    />
+    <>
+      {offline && <OfflineBar />}
+      <TeacherPanel
+        code={code}
+        teacherToken={teacherToken}
+        state={state}
+        grid={grid}
+        refresh={refresh}
+      />
+    </>
   );
 }
 
@@ -356,14 +404,16 @@ function StudentView({
   state,
   refresh,
   error,
+  offline,
 }: {
   code: string;
   student: { id: string; name: string };
   state: ReturnType<typeof useSession>["state"];
   refresh: () => void;
   error: string | null;
+  offline: boolean;
 }) {
-  if (!state) return <div className="p-6">Loading session {code}... {error && <span className="text-red-600">{error}</span>}</div>;
+  if (!state) return <LoadingScreen code={code} error={error} />;
   const grid = GRIDS[state.session.gridSize];
   const round = state.round;
 
@@ -383,7 +433,7 @@ function StudentView({
         <span>You: {student.name}</span>
         <span>Round {state.session.currentRound}/{state.session.totalRounds}</span>
         <span className="text-gray-500">{round?.status ?? state.session.status}</span>
-        {error && <span className="text-red-600 ml-auto">{error}</span>}
+        {offline && <OfflineChip />}
       </header>
 
       <main className="flex-1 min-h-0">
@@ -424,6 +474,34 @@ function Lobby({ state }: { state: ReturnType<typeof useSession>["state"] }) {
       <ul className="list-disc pl-6 text-sm">
         {state.students.map((s) => <li key={s.id}>{s.name}</li>)}
       </ul>
+    </div>
+  );
+}
+
+function LoadingScreen({ code, error }: { code: string; error: string | null }) {
+  return (
+    <div className="p-6 flex items-center justify-center h-full">
+      <div className="text-center space-y-2">
+        <div className="animate-pulse text-lg">Loading session {code}...</div>
+        {error && <div className="text-sm text-red-600">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
+function OfflineChip() {
+  return (
+    <span className="ml-auto flex items-center gap-1 text-xs text-amber-700 bg-amber-100 border border-amber-300 rounded-full px-2 py-0.5">
+      <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+      reconnecting
+    </span>
+  );
+}
+
+function OfflineBar() {
+  return (
+    <div className="bg-amber-100 border-b border-amber-300 text-amber-800 text-sm px-4 py-1">
+      Reconnecting to server... using last known state.
     </div>
   );
 }

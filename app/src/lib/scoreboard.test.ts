@@ -11,17 +11,17 @@ const students: Student[] = [
   { id: "s2", name: "Bob", joinedAt: 0 },
 ];
 
-describe("scoreboard", () => {
+describe("scoreboard (A-only, definer-scored)", () => {
   it("empty rounds → zero seats", () => {
     const { students: rows } = computeScoreboard(g, students, []);
     expect(rows).toHaveLength(2);
     for (const r of rows) {
-      expect(r.totalSeatsA + r.totalSeatsB).toBe(0);
-      expect(r.roundsPlayed).toBe(0);
+      expect(r.totalSeatsA).toBe(0);
+      expect(r.roundsScored).toBe(0);
     }
   });
 
-  it("counts seats from a completed round", () => {
+  it("credits each student with seats A from the map they defined", () => {
     const plan14 = g.randomPlans["14"][0];
     const pairing: [number, number][] = [
       [1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14],
@@ -32,17 +32,42 @@ describe("scoreboard", () => {
       voterDist: "random",
       voterSeed: 1,
       pairings: [["s1", "s2"]],
+      // Both students defined the same plan; combined by their partner.
       defines: { s1: plan14, s2: plan14 },
       combines: {
+        // s1 combined s2's map, s2 combined s1's map
         s1: { definerId: "s2", pairing },
         s2: { definerId: "s1", pairing },
       },
     };
-    const { students: rows } = computeScoreboard(g, students, [round]);
+    const { students: rows, rounds } = computeScoreboard(g, students, [round]);
+    // Each student's score is from their own define + partner's combine
     for (const r of rows) {
-      expect(r.roundsPlayed).toBe(1);
-      expect(r.totalSeatsA + r.totalSeatsB).toBeGreaterThan(0);
-      expect(r.totalSeatsA + r.totalSeatsB).toBeLessThanOrEqual(7);
+      expect(r.roundsScored).toBe(1);
+      expect(r.totalDistricts).toBe(7);
     }
+    // Round summary should have two outcomes
+    expect(rounds[0].results).toHaveLength(2);
+  });
+
+  it("skips partially-played rounds", () => {
+    const plan14 = g.randomPlans["14"][0];
+    const round: RoundState = {
+      round: 1,
+      status: "combine",
+      voterDist: "random",
+      voterSeed: 1,
+      pairings: [["s1", "s2"]],
+      defines: { s1: plan14, s2: plan14 },
+      combines: {
+        // Only s2 has combined (s1's map); s1 hasn't combined yet.
+        s2: { definerId: "s1", pairing: [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12],[13,14]] },
+      },
+    };
+    const { students: rows, rounds } = computeScoreboard(g, students, [round]);
+    // s1 has a score (their map was combined), s2 does not
+    expect(rows.find((r) => r.studentId === "s1")!.roundsScored).toBe(1);
+    expect(rows.find((r) => r.studentId === "s2")!.roundsScored).toBe(0);
+    expect(rounds[0].results).toHaveLength(1);
   });
 });

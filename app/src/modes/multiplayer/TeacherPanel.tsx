@@ -6,7 +6,6 @@ import type {
   SessionStateResponse,
 } from "../../../shared/session";
 import { computeScoreboard } from "../../lib/scoreboard";
-import { districtColor } from "../../lib/palette";
 
 interface Props {
   code: string;
@@ -177,32 +176,34 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
       {state.session.currentRound > 0 && (
         <section>
           <h3 className="font-semibold mb-2">Cumulative scoreboard</h3>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-600 border-b">
-                <th className="py-1">Student</th>
-                <th className="py-1 text-right">Rounds</th>
-                <th className="py-1 text-right">Seats A</th>
-                <th className="py-1 text-right">Seats B</th>
-                <th className="py-1 text-right">Wins A</th>
-                <th className="py-1 text-right">Wins B</th>
-                <th className="py-1 text-right">Ties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scoreboard.map((r) => (
-                <tr key={r.studentId} className="border-b">
-                  <td className="py-1">{r.name}</td>
-                  <td className="py-1 text-right">{r.roundsPlayed}</td>
-                  <td className="py-1 text-right">{r.totalSeatsA}</td>
-                  <td className="py-1 text-right">{r.totalSeatsB}</td>
-                  <td className="py-1 text-right">{r.wins.A}</td>
-                  <td className="py-1 text-right">{r.wins.B}</td>
-                  <td className="py-1 text-right">{r.wins.ties}</td>
+          <p className="text-xs text-gray-500 mb-2">
+            Each student scored on the A seats in the map they <em>drew</em>,
+            after their partner (Party B) combined it adversarially.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-600 border-b">
+                  <th className="py-1">#</th>
+                  <th className="py-1">Student</th>
+                  <th className="py-1 text-right">Rounds</th>
+                  <th className="py-1 text-right">A seats</th>
+                  <th className="py-1 text-right">of</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {scoreboard.map((r, i) => (
+                  <tr key={r.studentId} className="border-b">
+                    <td className="py-1">{i + 1}</td>
+                    <td className="py-1">{r.name}</td>
+                    <td className="py-1 text-right">{r.roundsScored}</td>
+                    <td className="py-1 text-right font-medium">{r.totalSeatsA}</td>
+                    <td className="py-1 text-right text-gray-500">{r.totalDistricts}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -219,32 +220,28 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
                   ({r.completed}/{r.participants})
                 </summary>
                 {r.results.length > 0 && (
-                  <table className="w-full text-sm mt-2">
-                    <thead>
-                      <tr className="text-left text-gray-600 border-b">
-                        <th className="py-1">Student</th>
-                        <th className="py-1">Combined map of</th>
-                        <th className="py-1 text-right">A</th>
-                        <th className="py-1 text-right">B</th>
-                        <th className="py-1">Winner</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {r.results.map((o, i) => (
-                        <tr key={i} className="border-b">
-                          <td className="py-1">{o.who}</td>
-                          <td className="py-1">{o.definer}</td>
-                          <td className="py-1 text-right">{o.seatsA}</td>
-                          <td className="py-1 text-right">{o.seatsB}</td>
-                          <td className="py-1">
-                            <span className="inline-block w-3 h-3 rounded-sm mr-1"
-                                  style={{ background: o.winner === "tie" ? "#ccc" : districtColor(o.winner === "A" ? 1 : 2) }} />
-                            {o.winner === "tie" ? "—" : o.winner}
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm mt-2">
+                      <thead>
+                        <tr className="text-left text-gray-600 border-b">
+                          <th className="py-1">Definer (A)</th>
+                          <th className="py-1">Combiner (B)</th>
+                          <th className="py-1 text-right">A seats</th>
+                          <th className="py-1 text-right">of</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {r.results.map((o, i) => (
+                          <tr key={i} className="border-b">
+                            <td className="py-1">{o.definer}</td>
+                            <td className="py-1">{o.combiner}</td>
+                            <td className="py-1 text-right font-medium">{o.seatsA}</td>
+                            <td className="py-1 text-right text-gray-500">{o.nDistricts}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </details>
             ))}

@@ -20,29 +20,41 @@ export function ResultsView({ grid, state, student }: Props) {
     [grid, round.voterDist, round.voterSeed],
   );
   const studentsById = new Map(state.students.map((s) => [s.id, s.name]));
+  const nDistricts = state.session.nDistricts;
 
   const pairs = round.pairings ?? [];
 
   return (
     <div className="p-4 space-y-4 overflow-auto">
-      <h2 className="text-xl font-semibold">
-        Round {round.round} results
-      </h2>
+      <h2 className="text-xl font-semibold">Round {round.round} results</h2>
+      <p className="text-sm text-gray-600">
+        Each card shows a definer's map after their adversarial combiner paired it.
+        Score = A seats won.
+      </p>
       {pairs.map(([a, b], i) => {
-        const rows: React.ReactNode[] = [];
-        for (const who of [a, b]) {
-          const combine = round.combines[who];
-          if (!combine) continue;
-          const definerAssignment = assignmentFromFlat(grid, round.defines[combine.definerId] ?? []);
-          const stats = computeFinalStats(grid, definerAssignment, combine.pairing, voters);
+        const cards: React.ReactNode[] = [];
+        // Two potential scoreable outcomes per pair
+        for (const [definer, combiner] of [[a, b], [b, a]] as const) {
+          const definerFlat = round.defines[definer];
+          const combineRec = round.combines[combiner];
+          if (!definerFlat || !combineRec || combineRec.definerId !== definer) continue;
+          const definerAsg = assignmentFromFlat(grid, definerFlat);
+          const stats = computeFinalStats(grid, definerAsg, combineRec.pairing, voters);
           const seats = seatCount(stats);
-          rows.push(
-            <div key={who} className={`border rounded p-3 ${who === student.id ? "ring-2 ring-blue-500" : ""}`}>
+          const isMine = definer === student.id;
+          cards.push(
+            <div key={definer}
+                 className={`border rounded p-3 ${isMine ? "ring-2 ring-blue-500" : ""}`}>
               <div className="text-sm font-medium mb-1">
-                {studentsById.get(who) ?? who} combined {studentsById.get(combine.definerId) ?? combine.definerId}'s map
+                {isMine ? "Your map" : `${studentsById.get(definer) ?? definer}'s map`}
+                <span className="font-normal text-gray-500">
+                  {" "}— combined by {studentsById.get(combiner) ?? combiner}
+                </span>
               </div>
-              <div className="text-sm mb-2">Seats: A {seats.A} · B {seats.B}{seats.ties > 0 ? ` · ties ${seats.ties}` : ""}</div>
-              <StatsTable stats={stats} expectedPop={grid.blocks.length / state.session.nDistricts} />
+              <div className="text-sm mb-2">
+                A score: <span className="font-semibold">{seats.A}</span> / {stats.length}
+              </div>
+              <StatsTable stats={stats} expectedPop={grid.blocks.length / nDistricts} />
             </div>
           );
         }
@@ -51,7 +63,7 @@ export function ResultsView({ grid, state, student }: Props) {
             <h3 className="font-semibold mb-2">
               Pair {i + 1}: {studentsById.get(a)} ↔ {studentsById.get(b)}
             </h3>
-            <div className="grid md:grid-cols-2 gap-3">{rows}</div>
+            <div className="grid md:grid-cols-2 gap-3">{cards}</div>
           </div>
         );
       })}
