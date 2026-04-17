@@ -17,7 +17,7 @@ import {
 export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (req.method !== "POST") return errorResponse("POST only", 405);
   const body = (await req.json()) as StartRoundRequest;
-  const metaOrErr = await requireTeacher(body.code, body.teacherToken, body.teacherPassphrase);
+  const metaOrErr = await requireTeacher(body.code, body.teacherToken);
   if (metaOrErr instanceof Response) return metaOrErr;
   const meta = metaOrErr;
 

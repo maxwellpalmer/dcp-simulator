@@ -107,28 +107,54 @@ export function UniMode({ grid, nDistricts }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
-        <MapView
-          grid={grid}
-          blockColors={
-            new Map(
-              grid.blocks.map((b) => [
-                b.id,
-                districtColor(assignment.get(b.id) ?? UNASSIGNED),
-              ]),
-            )
-          }
-          boundaryGroup={
-            new Map(
-              grid.blocks.map((b) => [b.id, assignment.get(b.id) ?? UNASSIGNED]),
-            )
-          }
-          voters={voters}
-          paintCurrent={current}
-          onSetBlock={handleSetBlock}
-          onInteractionStart={history.commit}
-          showVoters
-        />
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex flex-col">
+        <div className="flex gap-2 flex-wrap pb-2">
+          <button onClick={validate}
+                  className="px-3 py-1 rounded bg-black text-white text-sm">
+            Validate (v)
+          </button>
+          <button onClick={history.undo} disabled={!history.canUndo}
+                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+                  title="Undo (⌘/Ctrl+Z)">
+            Undo
+          </button>
+          <button onClick={history.redo} disabled={!history.canRedo}
+                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
+                  title="Redo (⌘/Ctrl+Shift+Z)">
+            Redo
+          </button>
+          <button onClick={loadRandom}
+                  className="px-3 py-1 rounded border text-sm">
+            Random plan
+          </button>
+          <button onClick={reset}
+                  className="px-3 py-1 rounded border text-sm">
+            Reset
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <MapView
+            grid={grid}
+            blockColors={
+              new Map(
+                grid.blocks.map((b) => [
+                  b.id,
+                  districtColor(assignment.get(b.id) ?? UNASSIGNED),
+                ]),
+              )
+            }
+            boundaryGroup={
+              new Map(
+                grid.blocks.map((b) => [b.id, assignment.get(b.id) ?? UNASSIGNED]),
+              )
+            }
+            voters={voters}
+            paintCurrent={current}
+            onSetBlock={handleSetBlock}
+            onInteractionStart={history.commit}
+            showVoters
+          />
+        </div>
       </div>
 
       <aside className="w-full md:w-80 flex flex-col gap-4">
@@ -159,31 +185,6 @@ export function UniMode({ grid, nDistricts }: Props) {
             className="mt-1 text-xs text-blue-600 hover:underline"
           >
             Reshuffle (seed {seed})
-          </button>
-        </section>
-
-        <section className="flex gap-2 flex-wrap">
-          <button onClick={validate}
-                  className="px-3 py-1 rounded bg-black text-white text-sm">
-            Validate (v)
-          </button>
-          <button onClick={history.undo} disabled={!history.canUndo}
-                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
-                  title="Undo (⌘/Ctrl+Z)">
-            Undo
-          </button>
-          <button onClick={history.redo} disabled={!history.canRedo}
-                  className="px-3 py-1 rounded border text-sm disabled:opacity-40"
-                  title="Redo (⌘/Ctrl+Shift+Z)">
-            Redo
-          </button>
-          <button onClick={loadRandom}
-                  className="px-3 py-1 rounded border text-sm">
-            Random plan
-          </button>
-          <button onClick={reset}
-                  className="px-3 py-1 rounded border text-sm">
-            Reset
           </button>
         </section>
 

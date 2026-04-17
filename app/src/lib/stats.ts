@@ -36,3 +36,11 @@ export function seatCount(stats: DistrictStats[]): { A: number; B: number; ties:
   }
   return { A, B, ties };
 }
+
+// Party A's score, counting each tied district as half a seat. Used in the
+// competitive scoreboard — keeps the total number of seats invariant
+// (A_score + B_score == nDistricts).
+export function scoreA(stats: DistrictStats[]): number {
+  const { A, ties } = seatCount(stats);
+  return A + ties * 0.5;
+}

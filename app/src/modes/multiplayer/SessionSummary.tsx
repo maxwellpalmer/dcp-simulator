@@ -30,8 +30,11 @@ export function SessionSummary({ grid, state, student }: Props) {
           <div className="text-sm text-gray-600">Your total over {me.roundsScored} round{me.roundsScored === 1 ? "" : "s"}:</div>
           <div className="flex gap-6 text-lg items-baseline">
             <span>
-              <span className="font-semibold text-2xl">{me.totalSeatsA}</span>
-              <span className="text-gray-500"> / {me.totalDistricts}</span> A seats
+              <span className="font-semibold text-2xl">{fmtSeats(me.totalSeatsA)}</span>
+              <span className="text-gray-500"> A seats</span>
+            </span>
+            <span className="text-sm text-gray-600">
+              {me.wins}W · {me.ties}T · {me.losses}L
             </span>
           </div>
           {rank !== null && (
@@ -52,7 +55,9 @@ export function SessionSummary({ grid, state, student }: Props) {
                 <th className="py-1">Student</th>
                 <th className="py-1 text-right">Rounds</th>
                 <th className="py-1 text-right">A seats</th>
-                <th className="py-1 text-right">of</th>
+                <th className="py-1 text-right">W</th>
+                <th className="py-1 text-right">T</th>
+                <th className="py-1 text-right">L</th>
               </tr>
             </thead>
             <tbody>
@@ -62,8 +67,10 @@ export function SessionSummary({ grid, state, student }: Props) {
                   <td className="py-1">{i + 1}</td>
                   <td className="py-1">{r.name}</td>
                   <td className="py-1 text-right">{r.roundsScored}</td>
-                  <td className="py-1 text-right">{r.totalSeatsA}</td>
-                  <td className="py-1 text-right text-gray-500">{r.totalDistricts}</td>
+                  <td className="py-1 text-right">{fmtSeats(r.totalSeatsA)}</td>
+                  <td className="py-1 text-right text-gray-500">{r.wins}</td>
+                  <td className="py-1 text-right text-gray-500">{r.ties}</td>
+                  <td className="py-1 text-right text-gray-500">{r.losses}</td>
                 </tr>
               ))}
             </tbody>
@@ -76,4 +83,8 @@ export function SessionSummary({ grid, state, student }: Props) {
       </p>
     </div>
   );
+}
+
+function fmtSeats(n: number): string {
+  return n % 1 === 0 ? n.toString() : n.toFixed(1);
 }

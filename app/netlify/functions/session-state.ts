@@ -47,8 +47,8 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
     : [];
 
   // Strip teacher auth material before sending to any client
-  const { teacherToken: _tt, teacherHash: _th, ...sessionSafe } = meta;
-  void _tt; void _th;
+  const { teacherToken: _tt, ...sessionSafe } = meta;
+  void _tt;
 
   const resp: SessionStateResponse = {
     session: sessionSafe,

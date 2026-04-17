@@ -17,8 +17,7 @@ export interface SessionMeta {
   code: string;
   gridSize: "70" | "140";
   nDistricts: number;
-  teacherToken: string; // random; always valid for teacher auth
-  teacherHash: string | null; // sha256(passphrase) if set; alternative auth
+  teacherToken: string; // random; used for teacher auth
   status: SessionStatus;
   currentRound: number;
   totalRounds: number;
@@ -44,7 +43,7 @@ export interface RoundState {
 }
 
 export interface SessionStateResponse {
-  session: Omit<SessionMeta, "teacherToken" | "teacherHash">;
+  session: Omit<SessionMeta, "teacherToken">;
   students: Student[];
   round: RoundState | null;
   partnerId: string | null;
@@ -66,12 +65,12 @@ export interface DistrictResultStat {
 // --- Request / response bodies ---
 
 export interface CreateSessionRequest {
+  code: string; // instructor-chosen; must be unique
   gridSize: "70" | "140";
   nDistricts: number;
   totalRounds: number;
   voterDist: DistributionMode;
   voterSeed: number;
-  teacherPassphrase?: string; // optional; if set, dashboard requires it
 }
 
 export interface CreateSessionResponse {
@@ -88,10 +87,9 @@ export interface JoinSessionResponse {
   studentId: string;
 }
 
-// Teacher-auth: provide either teacherToken (URL-bookmarked) or teacherPassphrase.
+// Teacher-auth: teacherToken (saved locally / URL-bookmarked).
 export interface TeacherAuth {
   teacherToken?: string;
-  teacherPassphrase?: string;
 }
 
 export interface StartRoundRequest extends TeacherAuth {

@@ -13,9 +13,19 @@ interface SessionInfo {
   teacherToken: string;
 }
 
+function uniqueCode(): string {
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "TEST";
+  for (let i = 0; i < 4; i++) {
+    s += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return s;
+}
+
 async function createSession(request: APIRequestContext): Promise<SessionInfo> {
   const res = await request.post("/api/session/create", {
     data: {
+      code: uniqueCode(),
       gridSize: GRID,
       nDistricts: N_DISTRICTS,
       totalRounds: 2,

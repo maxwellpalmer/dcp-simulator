@@ -169,17 +169,33 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
-        <MapView
-          grid={grid}
-          blockColors={blockColors}
-          boundaryGroup={boundaryGroup}
-          voters={voters}
-          showVoters={false}
-          onBlockClick={onBlockClick}
-          labels={labels}
-          perimeterBlocks={perimeterBlocks}
-        />
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex flex-col">
+        <div className="flex gap-2 flex-wrap pb-2">
+          <button onClick={submit} disabled={submitting}
+                  className="px-3 py-2 rounded bg-black text-white text-sm">
+            {submitting ? "Submitting..." : "Submit"}
+          </button>
+          <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
+                  title="Undo (⌘/Ctrl+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
+          <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
+                  title="Redo (⌘/Ctrl+Shift+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
+          <button onClick={() => { pairHistory.commit(); setPairing([]); setPendingPick(null); }}
+                  className="px-3 py-2 rounded border text-sm">Clear</button>
+        </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <MapView
+            grid={grid}
+            blockColors={blockColors}
+            boundaryGroup={boundaryGroup}
+            voters={voters}
+            showVoters={false}
+            onBlockClick={onBlockClick}
+            labels={labels}
+            perimeterBlocks={perimeterBlocks}
+          />
+        </div>
       </div>
       <aside className="w-full md:w-96 flex flex-col gap-4">
         <section className="rounded border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm">
@@ -199,20 +215,6 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
           <p className="text-xs text-gray-500">
             {pairing.length}/{nDistricts} pairs made.
           </p>
-        </section>
-        <section className="flex gap-2 flex-wrap">
-          <button onClick={submit} disabled={submitting}
-                  className="px-3 py-2 rounded bg-black text-white text-sm">
-            {submitting ? "Submitting..." : "Submit"}
-          </button>
-          <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
-                  title="Undo (⌘/Ctrl+Z)"
-                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
-          <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
-                  title="Redo (⌘/Ctrl+Shift+Z)"
-                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
-          <button onClick={() => { pairHistory.commit(); setPairing([]); setPendingPick(null); }}
-                  className="px-3 py-2 rounded border text-sm">Clear</button>
         </section>
         <section>
           <h3 className="font-semibold mb-1">Final district stats</h3>

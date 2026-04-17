@@ -177,6 +177,7 @@ function Landing({
 function CreateForm({
   onCreated,
 }: { onCreated: (code: string, token: string) => void }) {
+  const [code, setCode] = useState("");
   const [gridSize, setGridSize] = useState<"70" | "140">("70");
   const grid = GRIDS[gridSize];
   const dcpOptions = grid.districtOptions.filter((n) =>
@@ -185,7 +186,6 @@ function CreateForm({
   const [nDistricts, setNDistricts] = useState(dcpOptions[0]);
   const [totalRounds, setTotalRounds] = useState(3);
   const [voterDist, setVoterDist] = useState<DistributionMode>("random5050");
-  const [passphrase, setPassphrase] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -193,13 +193,16 @@ function CreateForm({
     if (!dcpOptions.includes(nDistricts)) setNDistricts(dcpOptions[0]);
   }, [gridSize]);
 
+  const normalizedCode = code.trim().toUpperCase();
+  const codeValid = /^[A-Z0-9]{3,12}$/.test(normalizedCode);
+
   const create = async () => {
     setBusy(true); setErr(null);
     try {
       const r = await api.createSession({
+        code: normalizedCode,
         gridSize, nDistricts, totalRounds,
         voterDist, voterSeed: Math.floor(Math.random() * 1_000_000),
-        teacherPassphrase: passphrase || undefined,
       });
       onCreated(r.code, r.teacherToken);
     } catch (e) {
@@ -210,6 +213,17 @@ function CreateForm({
   return (
     <div className="border rounded p-4 space-y-2">
       <h3 className="font-semibold">Create session (teacher)</h3>
+      <label className="block text-sm">Session code
+        <input value={code}
+               onChange={(e) => setCode(e.target.value)}
+               placeholder="e.g. POLI101"
+               className="ml-2 border rounded px-2 py-1 w-40 font-mono uppercase"
+               spellCheck={false} autoCapitalize="characters" />
+      </label>
+      <div className="text-xs text-gray-500 ml-1">
+        3–12 characters, letters A–Z and digits 0–9 only. Students will type
+        this to join.
+      </div>
       <label className="block text-sm">Grid
         <select className="ml-2 border rounded px-2 py-1" value={gridSize}
                 onChange={(e) => setGridSize(e.target.value as "70" | "140")}>
@@ -241,13 +255,8 @@ function CreateForm({
           <option value="majorityClusteredB">Majority B clustered</option>
         </select>
       </label>
-      <label className="block text-sm">Teacher passphrase (optional)
-        <input value={passphrase} onChange={(e) => setPassphrase(e.target.value)}
-               type="password" placeholder="leave blank to use token URL only"
-               className="ml-2 border rounded px-2 py-1 w-48" />
-      </label>
-      <button onClick={create} disabled={busy}
-              className="w-full mt-2 px-3 py-2 rounded bg-black text-white text-sm">
+      <button onClick={create} disabled={busy || !codeValid}
+              className="w-full mt-2 px-3 py-2 rounded bg-black text-white text-sm disabled:opacity-40">
         {busy ? "Creating..." : "Create session"}
       </button>
       {err && <div className="text-red-600 text-sm">{err}</div>}
@@ -342,7 +351,6 @@ function TeacherView({
   error: string | null;
   offline: boolean;
 }) {
-  const [passInput, setPassInput] = useState("");
   const [tokenInput, setTokenInput] = useState("");
   const [authErr, setAuthErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -353,8 +361,7 @@ function TeacherView({
       try {
         const r = await api.verifyTeacher({
           code,
-          teacherPassphrase: passInput || undefined,
-          teacherToken: tokenInput || undefined,
+          teacherToken: tokenInput,
         });
         onToken(r.teacherToken);
       } catch (e) {
@@ -364,16 +371,15 @@ function TeacherView({
     return (
       <div className="p-6 max-w-sm mx-auto space-y-3">
         <h2 className="font-semibold">Teacher login for session {code}</h2>
-        <label className="block text-sm">Passphrase
-          <input type="password" value={passInput} onChange={(e) => setPassInput(e.target.value)}
-                 className="mt-1 border rounded px-2 py-1 w-full" autoFocus />
-        </label>
-        <div className="text-xs text-gray-500">or paste the teacher token:</div>
+        <div className="text-xs text-gray-500">
+          Paste the teacher token you received when creating the session:
+        </div>
         <input value={tokenInput} onChange={(e) => setTokenInput(e.target.value)}
                placeholder="teacher token"
-               className="border rounded px-2 py-1 w-full font-mono text-xs" />
-        <button onClick={tryLogin} disabled={busy || (!passInput && !tokenInput)}
-                className="px-3 py-2 rounded bg-black text-white text-sm w-full">
+               className="border rounded px-2 py-1 w-full font-mono text-xs"
+               autoFocus />
+        <button onClick={tryLogin} disabled={busy || !tokenInput}
+                className="px-3 py-2 rounded bg-black text-white text-sm w-full disabled:opacity-40">
           {busy ? "Checking..." : "Log in"}
         </button>
         {authErr && <div className="text-red-600 text-sm">{authErr}</div>}

@@ -189,7 +189,9 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
                   <th className="py-1">Student</th>
                   <th className="py-1 text-right">Rounds</th>
                   <th className="py-1 text-right">A seats</th>
-                  <th className="py-1 text-right">of</th>
+                  <th className="py-1 text-right">W</th>
+                  <th className="py-1 text-right">T</th>
+                  <th className="py-1 text-right">L</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,8 +200,10 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
                     <td className="py-1">{i + 1}</td>
                     <td className="py-1">{r.name}</td>
                     <td className="py-1 text-right">{r.roundsScored}</td>
-                    <td className="py-1 text-right font-medium">{r.totalSeatsA}</td>
-                    <td className="py-1 text-right text-gray-500">{r.totalDistricts}</td>
+                    <td className="py-1 text-right font-medium">{fmtSeats(r.totalSeatsA)}</td>
+                    <td className="py-1 text-right text-gray-500">{r.wins}</td>
+                    <td className="py-1 text-right text-gray-500">{r.ties}</td>
+                    <td className="py-1 text-right text-gray-500">{r.losses}</td>
                   </tr>
                 ))}
               </tbody>
@@ -228,16 +232,22 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
                           <th className="py-1">Definer (A)</th>
                           <th className="py-1">Combiner (B)</th>
                           <th className="py-1 text-right">A seats</th>
-                          <th className="py-1 text-right">of</th>
+                          <th className="py-1 text-right">W</th>
+                          <th className="py-1 text-right">T</th>
+                          <th className="py-1 text-right">L</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {r.results.map((o, i) => (
+                        {[...r.results]
+                          .sort((a, b) => b.seatsA - a.seatsA)
+                          .map((o, i) => (
                           <tr key={i} className="border-b">
                             <td className="py-1">{o.definer}</td>
                             <td className="py-1">{o.combiner}</td>
-                            <td className="py-1 text-right font-medium">{o.seatsA}</td>
-                            <td className="py-1 text-right text-gray-500">{o.nDistricts}</td>
+                            <td className="py-1 text-right font-medium">{fmtSeats(o.seatsA)}</td>
+                            <td className="py-1 text-right text-gray-500">{o.wins}</td>
+                            <td className="py-1 text-right text-gray-500">{o.ties}</td>
+                            <td className="py-1 text-right text-gray-500">{o.losses}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -260,4 +270,9 @@ function Stat({ label, value }: { label: string; value: string }) {
       <div className="font-medium">{value}</div>
     </div>
   );
+}
+
+// Render a seats score like "3" or "3.5" — ties count as half a seat.
+function fmtSeats(n: number): string {
+  return n % 1 === 0 ? n.toString() : n.toFixed(1);
 }

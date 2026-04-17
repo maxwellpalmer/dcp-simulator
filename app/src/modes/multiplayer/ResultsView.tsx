@@ -3,7 +3,7 @@ import type { Grid } from "../../lib/types";
 import { generateVoters } from "../../lib/voters";
 import { assignmentFromFlat } from "../../lib/serialize";
 import { computeFinalStats } from "../../lib/combine";
-import { seatCount } from "../../lib/stats";
+import { scoreA, seatCount } from "../../lib/stats";
 import { StatsTable } from "../../components/StatsTable";
 import type { SessionStateResponse } from "../../../shared/session";
 
@@ -41,6 +41,7 @@ export function ResultsView({ grid, state, student }: Props) {
           const definerAsg = assignmentFromFlat(grid, definerFlat);
           const stats = computeFinalStats(grid, definerAsg, combineRec.pairing, voters);
           const seats = seatCount(stats);
+          const score = scoreA(stats);
           const isMine = definer === student.id;
           cards.push(
             <div key={definer}
@@ -52,7 +53,10 @@ export function ResultsView({ grid, state, student }: Props) {
                 </span>
               </div>
               <div className="text-sm mb-2">
-                A score: <span className="font-semibold">{seats.A}</span> / {stats.length}
+                A score: <span className="font-semibold">{fmtSeats(score)}</span>
+                <span className="text-gray-500">
+                  {" "}({seats.A}W · {seats.ties}T · {seats.B}L)
+                </span>
               </div>
               <StatsTable stats={stats} expectedPop={grid.blocks.length / nDistricts} />
             </div>
@@ -72,4 +76,8 @@ export function ResultsView({ grid, state, student }: Props) {
       </p>
     </div>
   );
+}
+
+function fmtSeats(n: number): string {
+  return n % 1 === 0 ? n.toString() : n.toFixed(1);
 }

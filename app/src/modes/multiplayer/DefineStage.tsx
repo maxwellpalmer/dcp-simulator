@@ -123,17 +123,37 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
-        <MapView
-          grid={grid}
-          blockColors={new Map(grid.blocks.map((b) => [b.id, districtColor(assignment.get(b.id) ?? UNASSIGNED)]))}
-          boundaryGroup={new Map(grid.blocks.map((b) => [b.id, assignment.get(b.id) ?? UNASSIGNED]))}
-          voters={voters}
-          showVoters
-          paintCurrent={current}
-          onSetBlock={handleSetBlock}
-          onInteractionStart={history.commit}
-        />
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex flex-col">
+        <div className="flex gap-2 flex-wrap pb-2">
+          <button onClick={submit} disabled={submitting}
+                  className="px-3 py-2 rounded bg-black text-white text-sm">
+            {submitting ? "Submitting..." : "Submit for combine"}
+          </button>
+          <button onClick={runValidate}
+                  className="px-3 py-2 rounded border text-sm">Validate (v)</button>
+          <button onClick={history.undo} disabled={!history.canUndo}
+                  title="Undo (⌘/Ctrl+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
+          <button onClick={history.redo} disabled={!history.canRedo}
+                  title="Redo (⌘/Ctrl+Shift+Z)"
+                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
+          <button onClick={loadRandom}
+                  className="px-3 py-2 rounded border text-sm">Random plan</button>
+          <button onClick={() => { history.commit(); setAssignment(new Map()); }}
+                  className="px-3 py-2 rounded border text-sm">Reset</button>
+        </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <MapView
+            grid={grid}
+            blockColors={new Map(grid.blocks.map((b) => [b.id, districtColor(assignment.get(b.id) ?? UNASSIGNED)]))}
+            boundaryGroup={new Map(grid.blocks.map((b) => [b.id, assignment.get(b.id) ?? UNASSIGNED]))}
+            voters={voters}
+            showVoters
+            paintCurrent={current}
+            onSetBlock={handleSetBlock}
+            onInteractionStart={history.commit}
+          />
+        </div>
       </div>
       <aside className="w-full md:w-80 flex flex-col gap-4">
         <section className="rounded border border-gray-800 bg-gray-900 text-white px-3 py-2 text-sm">
@@ -153,24 +173,6 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
         <section>
           <h3 className="font-semibold mb-1">Sub-district stats</h3>
           <StatsTable stats={stats} expectedPop={expectedPop} />
-        </section>
-        <section className="flex gap-2 flex-wrap">
-          <button onClick={runValidate}
-                  className="px-3 py-2 rounded border text-sm">Validate (v)</button>
-          <button onClick={submit} disabled={submitting}
-                  className="px-3 py-2 rounded bg-black text-white text-sm">
-            {submitting ? "Submitting..." : "Submit for combine"}
-          </button>
-          <button onClick={history.undo} disabled={!history.canUndo}
-                  title="Undo (⌘/Ctrl+Z)"
-                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Undo</button>
-          <button onClick={history.redo} disabled={!history.canRedo}
-                  title="Redo (⌘/Ctrl+Shift+Z)"
-                  className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
-          <button onClick={loadRandom}
-                  className="px-3 py-2 rounded border text-sm">Random plan</button>
-          <button onClick={() => { history.commit(); setAssignment(new Map()); }}
-                  className="px-3 py-2 rounded border text-sm">Reset</button>
         </section>
         {errors && (
           <section role="alert" aria-live="polite" className={`p-3 rounded text-sm ${errors.length === 0 ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"}`}>

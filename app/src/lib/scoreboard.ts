@@ -2,7 +2,7 @@ import type { Grid } from "./types";
 import { generateVoters } from "./voters";
 import { computeFinalStats } from "./combine";
 import { assignmentFromFlat } from "./serialize";
-import { seatCount } from "./stats";
+import { scoreA, seatCount } from "./stats";
 import type { RoundState, Student } from "../../shared/session";
 
 // In competitive mode, every student plays Party A during Define and Party B
@@ -14,11 +14,15 @@ import type { RoundState, Student } from "../../shared/session";
 export interface ScoreRow {
   studentId: string;
   name: string;
+  // A's score, with each tied district counting as 0.5 seats.
   totalSeatsA: number;
   roundsScored: number;
-  // Total districts across all rounds this student defined — denominator
-  // to read totalSeatsA against (so a 4/7 vs 6/10 is apparent).
+  // Total districts across all rounds this student defined.
   totalDistricts: number;
+  // District outcomes (not round outcomes) across all scored rounds.
+  wins: number;    // districts where A won outright
+  ties: number;    // tied districts
+  losses: number;  // districts where B won outright
 }
 
 export interface RoundResultRow {
@@ -28,7 +32,11 @@ export interface RoundResultRow {
   // The student who combined against them.
   combinerId: string;
   combiner: string;
+  // A's score for this round (wins + 0.5 * ties).
   seatsA: number;
+  wins: number;
+  ties: number;
+  losses: number;
   nDistricts: number;
 }
 
@@ -55,6 +63,9 @@ export function computeScoreboard(
       totalSeatsA: 0,
       roundsScored: 0,
       totalDistricts: 0,
+      wins: 0,
+      ties: 0,
+      losses: 0,
     });
   }
 
@@ -79,18 +90,25 @@ export function computeScoreboard(
         const definerAsg = assignmentFromFlat(grid, definerFlat);
         const stats = computeFinalStats(grid, definerAsg, combineRec.pairing, voters);
         const seats = seatCount(stats);
+        const aScore = scoreA(stats);
         const row = rows.get(definer);
         if (row) {
-          row.totalSeatsA += seats.A;
+          row.totalSeatsA += aScore;
           row.totalDistricts += stats.length;
           row.roundsScored++;
+          row.wins += seats.A;
+          row.ties += seats.ties;
+          row.losses += seats.B;
         }
         results.push({
           definerId: definer,
           definer: nameById.get(definer) ?? definer,
           combinerId: combiner,
           combiner: nameById.get(combiner) ?? combiner,
-          seatsA: seats.A,
+          seatsA: aScore,
+          wins: seats.A,
+          ties: seats.ties,
+          losses: seats.B,
           nDistricts: stats.length,
         });
       }

@@ -102,9 +102,11 @@ async function main() {
   console.log(`  Using plan with ${plan.length} blocks, ${new Set(plan).size} sub-districts, pairing length ${pairing!.length}`);
 
   // --- Create session ---
+  const dryRunCode = "DRYRUN" + Math.random().toString(36).slice(2, 6).toUpperCase();
   const { code, teacherToken } = await api<{ code: string; teacherToken: string }>(
     "/api/session/create",
     {
+      code: dryRunCode,
       gridSize: "70",
       nDistricts: N_DISTRICTS,
       totalRounds: N_ROUNDS,

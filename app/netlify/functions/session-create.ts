@@ -6,11 +6,12 @@ import type {
 } from "../../shared/session.ts";
 import {
   errorResponse,
+  isValidCode,
   json,
-  randomCode,
+  loadMeta,
+  normalizeCode,
   randomToken,
   saveMeta,
-  sha256Hex,
 } from "./_lib.ts";
 
 export default async (req: Request, _ctx: Context): Promise<Response> => {
@@ -19,19 +20,24 @@ export default async (req: Request, _ctx: Context): Promise<Response> => {
   if (!body.gridSize || !body.nDistricts || !body.totalRounds) {
     return errorResponse("Missing gridSize, nDistricts, or totalRounds");
   }
+  if (!body.code) return errorResponse("Missing session code");
 
-  const code = randomCode();
+  const code = normalizeCode(body.code);
+  if (!isValidCode(code)) {
+    return errorResponse(
+      "Session code must be 3–12 characters, letters A–Z and digits 0–9 only",
+    );
+  }
+  if (await loadMeta(code)) {
+    return errorResponse(`Session code "${code}" is already in use`, 409);
+  }
+
   const teacherToken = randomToken();
-  const teacherHash = body.teacherPassphrase
-    ? await sha256Hex(`${code}:${body.teacherPassphrase}`)
-    : null;
-
   const meta: SessionMeta = {
     code,
     gridSize: body.gridSize,
     nDistricts: body.nDistricts,
     teacherToken,
-    teacherHash,
     status: "lobby",
     currentRound: 0,
     totalRounds: body.totalRounds,

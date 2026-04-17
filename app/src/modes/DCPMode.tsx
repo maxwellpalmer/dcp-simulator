@@ -289,21 +289,52 @@ export function DCPMode({ grid, nDistricts }: Props) {
   // ---- Render ----
   return (
     <div className="flex flex-col md:flex-row gap-4 p-4 h-full">
-      <div className="flex-1 min-h-[320px] md:min-h-0 flex items-center justify-center">
-        <MapView
-          grid={grid}
-          blockColors={blockColors}
-          boundaryGroup={boundaryGroup}
-          voters={voters}
-          showVoters={stage === "define"}
-          paintCurrent={stage === "define" ? current : undefined}
-          onSetBlock={stage === "define" ? handleSetBlock : undefined}
-          onBlockClick={stage === "combine" ? onBlockClickInCombine : undefined}
-          onInteractionStart={stage === "define" ? asgHistory.commit : undefined}
-          labels={labels}
-          perimeterBlocks={perimeterBlocks}
-          dimmedBlocks={dimmedBlocks}
-        />
+      <div className="flex-1 min-h-[320px] md:min-h-0 flex flex-col">
+        <div className="flex gap-2 flex-wrap pb-2">
+          {stage === "define" ? (
+            <>
+              <button onClick={validateDefine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate (v)</button>
+              <button onClick={asgHistory.undo} disabled={!asgHistory.canUndo}
+                      title="Undo (⌘/Ctrl+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
+              <button onClick={asgHistory.redo} disabled={!asgHistory.canRedo}
+                      title="Redo (⌘/Ctrl+Shift+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
+              <button onClick={goToCombine} className="px-3 py-1 rounded border text-sm">Next: Combine →</button>
+              <button onClick={loadRandom} className="px-3 py-1 rounded border text-sm">Random plan</button>
+              <button onClick={resetAll} className="px-3 py-1 rounded border text-sm">Reset</button>
+            </>
+          ) : (
+            <>
+              <button onClick={validateCombine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate</button>
+              <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
+                      title="Undo (⌘/Ctrl+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
+              <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
+                      title="Redo (⌘/Ctrl+Shift+Z)"
+                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
+              <button onClick={() => { pairHistory.commit(); setPairing([]); }}
+                      className="px-3 py-1 rounded border text-sm">Clear pairings</button>
+              <button onClick={() => setStage("define")} className="px-3 py-1 rounded border text-sm">← Back to define</button>
+            </>
+          )}
+        </div>
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <MapView
+            grid={grid}
+            blockColors={blockColors}
+            boundaryGroup={boundaryGroup}
+            voters={voters}
+            showVoters={stage === "define"}
+            paintCurrent={stage === "define" ? current : undefined}
+            onSetBlock={stage === "define" ? handleSetBlock : undefined}
+            onBlockClick={stage === "combine" ? onBlockClickInCombine : undefined}
+            onInteractionStart={stage === "define" ? asgHistory.commit : undefined}
+            labels={labels}
+            perimeterBlocks={perimeterBlocks}
+            dimmedBlocks={dimmedBlocks}
+          />
+        </div>
       </div>
 
       <aside className="w-full md:w-96 flex flex-col gap-4">
@@ -347,19 +378,6 @@ export function DCPMode({ grid, nDistricts }: Props) {
 
             <VoterSection dist={dist} setDist={setDist} seed={seed} setSeed={setSeed} />
 
-            <section className="flex gap-2 flex-wrap">
-              <button onClick={validateDefine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate (v)</button>
-              <button onClick={asgHistory.undo} disabled={!asgHistory.canUndo}
-                      title="Undo (⌘/Ctrl+Z)"
-                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
-              <button onClick={asgHistory.redo} disabled={!asgHistory.canRedo}
-                      title="Redo (⌘/Ctrl+Shift+Z)"
-                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
-              <button onClick={goToCombine} className="px-3 py-1 rounded border text-sm">Next: Combine →</button>
-              <button onClick={loadRandom} className="px-3 py-1 rounded border text-sm">Random plan</button>
-              <button onClick={resetAll} className="px-3 py-1 rounded border text-sm">Reset</button>
-            </section>
-
             <section>
               <h3 className="font-semibold mb-1">Sub-district stats</h3>
               <StatsTable stats={defineStats} expectedPop={expectedPop} />
@@ -376,19 +394,6 @@ export function DCPMode({ grid, nDistricts }: Props) {
                 pair them into a final district. Click a paired sub-district
                 to unpair. {pairing.length}/{nDistricts} pairs made.
               </p>
-            </section>
-
-            <section className="flex gap-2 flex-wrap">
-              <button onClick={validateCombine} className="px-3 py-1 rounded bg-black text-white text-sm">Validate</button>
-              <button onClick={pairHistory.undo} disabled={!pairHistory.canUndo}
-                      title="Undo (⌘/Ctrl+Z)"
-                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Undo</button>
-              <button onClick={pairHistory.redo} disabled={!pairHistory.canRedo}
-                      title="Redo (⌘/Ctrl+Shift+Z)"
-                      className="px-3 py-1 rounded border text-sm disabled:opacity-40">Redo</button>
-              <button onClick={() => { pairHistory.commit(); setPairing([]); }}
-                      className="px-3 py-1 rounded border text-sm">Clear pairings</button>
-              <button onClick={() => setStage("define")} className="px-3 py-1 rounded border text-sm">← Back to define</button>
             </section>
 
             {finalStats.length > 0 && (

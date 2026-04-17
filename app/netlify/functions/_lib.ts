@@ -129,12 +129,16 @@ export async function saveStudentCombine(
   );
 }
 
-// Session code: 5 chars, unambiguous alphabet (no O/0/I/L/1).
-export function randomCode(len = 5): string {
-  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < len; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return s;
+// Allowed chars for instructor-chosen session codes: A-Z and 0-9.
+// Client + server should uppercase before validating / storing.
+const CODE_ALPHABET = /^[A-Z0-9]{3,12}$/;
+
+export function normalizeCode(raw: string): string {
+  return raw.trim().toUpperCase();
+}
+
+export function isValidCode(code: string): boolean {
+  return CODE_ALPHABET.test(code);
 }
 
 export function randomId(): string {
@@ -169,33 +173,20 @@ export function shuffle<T>(arr: T[]): T[] {
   return out;
 }
 
-export async function sha256Hex(s: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-export async function checkTeacher(
+export function checkTeacher(
   meta: SessionMeta,
   teacherToken: string | undefined,
-  teacherPassphrase: string | undefined,
-): Promise<boolean> {
-  if (teacherToken && teacherToken === meta.teacherToken) return true;
-  if (teacherPassphrase && meta.teacherHash) {
-    const h = await sha256Hex(`${meta.code}:${teacherPassphrase}`);
-    if (h === meta.teacherHash) return true;
-  }
-  return false;
+): boolean {
+  return !!teacherToken && teacherToken === meta.teacherToken;
 }
 
 export async function requireTeacher(
   code: string,
   teacherToken: string | undefined,
-  teacherPassphrase?: string | undefined,
 ): Promise<SessionMeta | Response> {
   const meta = await loadMeta(code);
   if (!meta) return errorResponse("Unknown session", 404);
-  if (!(await checkTeacher(meta, teacherToken, teacherPassphrase))) {
+  if (!checkTeacher(meta, teacherToken)) {
     return errorResponse("Teacher authentication failed", 401);
   }
   return meta;

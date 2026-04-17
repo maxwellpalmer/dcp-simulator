@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeScoreboard } from "./scoreboard";
-import type { Grid } from "./types";
+import { scoreA } from "./stats";
+import type { DistrictStats, Grid } from "./types";
 import grid70 from "../assets/grid_70.json";
 import type { RoundState, Student } from "../../shared/session";
 
@@ -48,6 +49,18 @@ describe("scoreboard (A-only, definer-scored)", () => {
     }
     // Round summary should have two outcomes
     expect(rounds[0].results).toHaveLength(2);
+  });
+
+  it("ties count as half a seat for A", () => {
+    const mk = (winner: DistrictStats["winner"]): DistrictStats => ({
+      district: 1, population: 10, votesA: 5, votesB: 5, winner,
+    });
+    // 2 A wins + 1 B + 1 tie → 2 + 0.5 = 2.5
+    expect(scoreA([mk("A"), mk("A"), mk("B"), mk("tie")])).toBe(2.5);
+    // 2 ties → 1.0
+    expect(scoreA([mk("tie"), mk("tie")])).toBe(1);
+    // All B → 0
+    expect(scoreA([mk("B"), mk("B"), mk("B")])).toBe(0);
   });
 
   it("skips partially-played rounds", () => {

@@ -53,9 +53,9 @@ test.describe("DCP solo mode", () => {
         // Plan was invalid (doughnut) — try another
       }
     }
-    // Combine stage should show pairing instructions and sub-district labels
+    // Combine stage should show pairing instructions and the Validate action
     await expect(page.getByText(/pairs made/i)).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Pairings" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Validate$/ })).toBeVisible();
   });
 
   test("undo/redo works in define stage", async ({ page }) => {
