@@ -14,7 +14,6 @@ import { validatePlan } from "../lib/validate";
 import { computeStats } from "../lib/stats";
 import {
   adjacentSubDistricts,
-  applyPairing,
   computeFinalStats,
   subDistrictLabel,
   validatePairing,

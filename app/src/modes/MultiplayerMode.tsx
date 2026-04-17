@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Grid } from "../lib/types";
 import grid70 from "../assets/grid_70.json";
 import grid140 from "../assets/grid_140.json";
@@ -336,7 +336,7 @@ function TeacherView({
   code: string;
   teacherToken: string | null;
   onToken: (t: string) => void;
-  state: Parameters<typeof TeacherPanel>[0]["state"];
+  state: Parameters<typeof TeacherPanel>[0]["state"] | null;
   refresh: () => void;
   error: string | null;
   offline: boolean;

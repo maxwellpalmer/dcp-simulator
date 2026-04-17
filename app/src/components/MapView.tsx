@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Assignment, BlockId, DistrictId, Grid } from "../lib/types";
+import type { BlockId, DistrictId, Grid } from "../lib/types";
 import { UNASSIGNED } from "../lib/types";
 import type { VoterMap } from "../lib/voters";
 import { districtColor, VOTER_COLORS } from "../lib/palette";

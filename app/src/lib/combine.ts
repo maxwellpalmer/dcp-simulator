@@ -132,7 +132,7 @@ export function applyPairing(
 }
 
 export function computeFinalStats(
-  grid: Grid,
+  _grid: Grid,
   subAssignment: Assignment,
   pairing: Pairing,
   voters: VoterMap,
