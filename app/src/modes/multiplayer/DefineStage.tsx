@@ -83,6 +83,17 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
     return errs.length === 0;
   };
 
+  const loadRandom = () => {
+    const plans = grid.randomPlans[String(nSub)];
+    if (!plans || plans.length === 0) return;
+    const plan = plans[Math.floor(Math.random() * plans.length)];
+    const m: Assignment = new Map();
+    plan.forEach((d, i) => m.set(grid.blocks[i].id, d));
+    history.commit();
+    setAssignment(m);
+    setErrors(null);
+  };
+
   const submit = async () => {
     if (!runValidate()) return;
     setSubmitting(true);
@@ -156,6 +167,8 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
           <button onClick={history.redo} disabled={!history.canRedo}
                   title="Redo (⌘/Ctrl+Shift+Z)"
                   className="px-3 py-2 rounded border text-sm disabled:opacity-40">Redo</button>
+          <button onClick={loadRandom}
+                  className="px-3 py-2 rounded border text-sm">Random plan</button>
           <button onClick={() => { history.commit(); setAssignment(new Map()); }}
                   className="px-3 py-2 rounded border text-sm">Reset</button>
         </section>
