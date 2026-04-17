@@ -42,28 +42,49 @@ load_hex_70 <- function() {
   blocks
 }
 
-# Size 140: rectangular 10 wide x 14 tall pointy-top hex grid.
-# (Matches side length ~0.577 of the 70-block grid for visual consistency.)
+# Size 140: elliptical pointy-top hex grid, hand-tuned. Wider than tall with
+# tapered top/bottom edges. Row widths (bottom→top of image):
+#   8, 9, 10, 11, 12, 13, 13+1, 13, 12, 11, 10, 9, 8  = 140
+# The "+1" is an extra hex on the left edge (row 6, cx=0).
 make_hex_140 <- function() {
-  s <- sqrt(1/3)  # side length → width=1, height=2s
+  s <- sqrt(1/3)
   w <- 1
-  h <- 2 * s
-  v_spacing <- 1.5 * s
+  vs <- 1.5 * s  # vertical spacing between rows
+
+  # Row widths and starting x for each row (manually tuned).
+  # Even rows (0,2,4,...) have integer cx; odd rows offset by w/2.
+  row_specs <- list(
+    list(row = 0,  n =  8, x0 = 3),
+    list(row = 1,  n =  9, x0 = 2.5),
+    list(row = 2,  n = 10, x0 = 2),
+    list(row = 3,  n = 11, x0 = 1.5),
+    list(row = 4,  n = 12, x0 = 1),
+    list(row = 5,  n = 13, x0 = 0.5),
+    list(row = 6,  n = 14, x0 = 0),     # 13 + 1 extra on left
+    list(row = 7,  n = 13, x0 = 0.5),
+    list(row = 8,  n = 12, x0 = 1),
+    list(row = 9,  n = 11, x0 = 1.5),
+    list(row = 10, n = 10, x0 = 2),
+    list(row = 11, n =  9, x0 = 2.5),
+    list(row = 12, n =  8, x0 = 3)
+  )
+  # Verify total
+  stopifnot(sum(sapply(row_specs, `[[`, "n")) == 140)
 
   hexes <- list()
   i <- 1
-  for (row in 0:13) {
-    for (col in 0:9) {
-      cx <- col * w + (if (row %% 2 == 1) w / 2 else 0)
-      cy <- row * v_spacing
+  for (spec in row_specs) {
+    cy <- spec$row * vs
+    for (col in 0:(spec$n - 1)) {
+      cx <- spec$x0 + col * w
       verts <- matrix(c(
-        cx,         cy - s,
-        cx - w/2,   cy - s/2,
-        cx - w/2,   cy + s/2,
-        cx,         cy + s,
-        cx + w/2,   cy + s/2,
-        cx + w/2,   cy - s/2,
-        cx,         cy - s
+        cx,       cy - s,
+        cx - w/2, cy - s/2,
+        cx - w/2, cy + s/2,
+        cx,       cy + s,
+        cx + w/2, cy + s/2,
+        cx + w/2, cy - s/2,
+        cx,       cy - s
       ), ncol = 2, byrow = TRUE)
       hexes[[i]] <- st_polygon(list(verts))
       i <- i + 1
