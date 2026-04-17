@@ -10,10 +10,11 @@ import {
   adjacentSubDistricts,
   computeFinalStats,
   subDistrictLabel,
+  subDistrictLabelLines,
+  subDistrictSummaries,
   validatePairing,
   type Pairing,
 } from "../../lib/combine";
-import { districtCentroids } from "../../lib/centroid";
 import { assignmentFromFlat } from "../../lib/serialize";
 import { api } from "../../lib/api";
 import type { SessionStateResponse } from "../../../shared/session";
@@ -110,24 +111,25 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
     return m;
   }, [grid, assignment, subToFinal, pendingPick]);
 
+  // Always group by sub-district so the seam between two paired sub-districts
+  // stays visible. Final-district identity is conveyed by shared block color.
   const boundaryGroup = useMemo(() => {
     const m = new Map<BlockId, DistrictId>();
     for (const b of grid.blocks) {
-      const sub = assignment.get(b.id) ?? UNASSIGNED;
-      const final = subToFinal.get(sub);
-      m.set(b.id, final !== undefined ? final : 1000 + sub);
+      m.set(b.id, assignment.get(b.id) ?? UNASSIGNED);
     }
     return m;
-  }, [grid, assignment, subToFinal]);
+  }, [grid, assignment]);
 
   const labels = useMemo(() => {
-    const cents = districtCentroids(grid, assignment);
-    const out = [];
-    for (const [sub, { cx, cy }] of cents) {
-      out.push({ district: sub, cx, cy, text: subDistrictLabel(sub) });
-    }
-    return out;
-  }, [grid, assignment]);
+    const sums = subDistrictSummaries(grid, assignment, voters);
+    return sums.map((s) => ({
+      district: s.district,
+      cx: s.cx,
+      cy: s.cy,
+      lines: subDistrictLabelLines(s),
+    }));
+  }, [grid, assignment, voters]);
 
   const perimeterBlocks = useMemo(() => {
     if (pendingPick === null) return undefined;
@@ -173,7 +175,7 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
           blockColors={blockColors}
           boundaryGroup={boundaryGroup}
           voters={voters}
-          showVoters
+          showVoters={false}
           onBlockClick={onBlockClick}
           labels={labels}
           perimeterBlocks={perimeterBlocks}
@@ -197,19 +199,6 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
           <p className="text-xs text-gray-500">
             {pairing.length}/{nDistricts} pairs made.
           </p>
-        </section>
-        <section>
-          <h4 className="text-sm font-semibold mb-1">Pairings</h4>
-          {pairing.length === 0 && <p className="text-xs text-gray-500">None yet.</p>}
-          <ul className="text-sm space-y-1">
-            {pairing.map(([a, b], i) => (
-              <li key={i} className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm border border-gray-400"
-                      style={{ background: districtColor(i + 1) }} />
-                District {i + 1}: {subDistrictLabel(a)} + {subDistrictLabel(b)}
-              </li>
-            ))}
-          </ul>
         </section>
         <section className="flex gap-2 flex-wrap">
           <button onClick={submit} disabled={submitting}

@@ -10,7 +10,7 @@ export interface SubLabel {
   district: DistrictId;
   cx: number;
   cy: number;
-  text: string;
+  lines: string[]; // one or more lines; rendered centered and stacked
 }
 
 interface Props {
@@ -247,25 +247,47 @@ export function MapView({
         })}
 
       {labels &&
-        labels.map((l, i) => (
-          <text
-            key={i}
-            x={l.cx}
-            y={-l.cy}
-            transform="scale(1,-1)"
-            fontSize={0.4}
-            fontWeight={700}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#111"
-            stroke="#fff"
-            strokeWidth={0.08}
-            paintOrder="stroke"
-            pointerEvents="none"
-          >
-            {l.text}
-          </text>
-        ))}
+        labels.map((l, i) => {
+          const fontSize = 0.24;
+          const lineHeight = 0.28;
+          const approxCharW = 0.15; // bold glyph avg at fontSize 0.24
+          const n = l.lines.length;
+          const maxChars = Math.max(...l.lines.map((s) => s.length));
+          const boxW = maxChars * approxCharW + 0.12;
+          const boxH = n * lineHeight + 0.04;
+          return (
+            <g key={i} transform="scale(1,-1)" pointerEvents="none">
+              <rect
+                x={l.cx - boxW / 2}
+                y={-l.cy - boxH / 2}
+                width={boxW}
+                height={boxH}
+                fill="#fff"
+                rx={0.06}
+                ry={0.06}
+              />
+              <text
+                x={l.cx}
+                y={-l.cy}
+                fontSize={fontSize}
+                fontWeight={700}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#111"
+              >
+                {l.lines.map((ln, j) => (
+                  <tspan
+                    key={j}
+                    x={l.cx}
+                    dy={j === 0 ? -((n - 1) / 2) * lineHeight : lineHeight}
+                  >
+                    {ln}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          );
+        })}
     </svg>
   );
 }

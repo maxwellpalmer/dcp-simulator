@@ -16,10 +16,11 @@ import {
   adjacentSubDistricts,
   computeFinalStats,
   subDistrictLabel,
+  subDistrictLabelLines,
+  subDistrictSummaries,
   validatePairing,
   type Pairing,
 } from "../lib/combine";
-import { districtCentroids } from "../lib/centroid";
 import { MapView, type SubLabel } from "../components/MapView";
 import { DistrictPicker } from "../components/DistrictPicker";
 import { StatsTable } from "../components/StatsTable";
@@ -243,31 +244,26 @@ export function DCPMode({ grid, nDistricts }: Props) {
   }, [grid, assignment, stage, subToFinal, pendingPick]);
 
   const boundaryGroup = useMemo(() => {
-    // In define: group = sub-district. In combine: group = final district
-    // (so boundaries fade between paired subs).
+    // Group by sub-district in both stages so the seam between two paired
+    // sub-districts stays visible during combine. Final-district identity
+    // is conveyed via shared block color.
     const m = new Map<BlockId, DistrictId>();
     for (const b of grid.blocks) {
-      const sub = assignment.get(b.id) ?? UNASSIGNED;
-      if (stage === "define") m.set(b.id, sub);
-      else {
-        // Paired: group by final district. Unpaired: group by sub-district
-        // (offset so it can't collide with final-district ids).
-        const finalD = subToFinal.get(sub);
-        m.set(b.id, finalD !== undefined ? finalD : 1000 + sub);
-      }
+      m.set(b.id, assignment.get(b.id) ?? UNASSIGNED);
     }
     return m;
-  }, [grid, assignment, stage, subToFinal]);
+  }, [grid, assignment]);
 
   const labels = useMemo<SubLabel[]>(() => {
     if (stage !== "combine") return [];
-    const cents = districtCentroids(grid, assignment);
-    const out: SubLabel[] = [];
-    for (const [sub, { cx, cy }] of cents) {
-      out.push({ district: sub, cx, cy, text: subDistrictLabel(sub) });
-    }
-    return out;
-  }, [stage, grid, assignment]);
+    const sums = subDistrictSummaries(grid, assignment, voters);
+    return sums.map((s) => ({
+      district: s.district,
+      cx: s.cx,
+      cy: s.cy,
+      lines: subDistrictLabelLines(s),
+    }));
+  }, [stage, grid, assignment, voters]);
 
   const perimeterBlocks = useMemo(() => {
     if (stage !== "combine" || pendingPick === null) return undefined;
@@ -299,7 +295,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
           blockColors={blockColors}
           boundaryGroup={boundaryGroup}
           voters={voters}
-          showVoters
+          showVoters={stage === "define"}
           paintCurrent={stage === "define" ? current : undefined}
           onSetBlock={stage === "define" ? handleSetBlock : undefined}
           onBlockClick={stage === "combine" ? onBlockClickInCombine : undefined}
@@ -380,24 +376,6 @@ export function DCPMode({ grid, nDistricts }: Props) {
                 pair them into a final district. Click a paired sub-district
                 to unpair. {pairing.length}/{nDistricts} pairs made.
               </p>
-            </section>
-
-            <section>
-              <h4 className="text-sm font-semibold mb-1">Pairings</h4>
-              {pairing.length === 0 && (
-                <p className="text-xs text-gray-500">None yet.</p>
-              )}
-              <ul className="text-sm space-y-1">
-                {pairing.map(([a, b], i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span
-                      className="inline-block w-3 h-3 rounded-sm border border-gray-400"
-                      style={{ background: districtColor(i + 1) }}
-                    />
-                    District {i + 1}: {subDistrictLabel(a)} + {subDistrictLabel(b)}
-                  </li>
-                ))}
-              </ul>
             </section>
 
             <section className="flex gap-2 flex-wrap">

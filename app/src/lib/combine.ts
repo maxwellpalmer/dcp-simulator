@@ -27,6 +27,80 @@ export function subDistrictLabel(id: DistrictId): string {
   return s;
 }
 
+export interface SubDistrictSummary {
+  district: DistrictId;
+  cx: number;
+  cy: number;
+  votesA: number;
+  votesB: number;
+}
+
+export function subDistrictSummaries(
+  grid: Grid,
+  assignment: Assignment,
+  voters: VoterMap,
+): SubDistrictSummary[] {
+  const byId = new Map(grid.blocks.map((b) => [b.id, b]));
+  const accum = new Map<
+    DistrictId,
+    {
+      sx: number; sy: number; n: number;
+      blocks: BlockId[];
+      votesA: number; votesB: number;
+    }
+  >();
+  for (const [blkId, d] of assignment) {
+    if (d === UNASSIGNED) continue;
+    const b = byId.get(blkId);
+    if (!b) continue;
+    let cur = accum.get(d);
+    if (!cur) {
+      cur = { sx: 0, sy: 0, n: 0, blocks: [], votesA: 0, votesB: 0 };
+      accum.set(d, cur);
+    }
+    cur.sx += b.cx;
+    cur.sy += b.cy;
+    cur.n += 1;
+    cur.blocks.push(blkId);
+    const party = voters.get(blkId);
+    if (party === "A") cur.votesA += 1;
+    else if (party === "B") cur.votesB += 1;
+  }
+  const out: SubDistrictSummary[] = [];
+  for (const [d, s] of accum) {
+    // Place the label at the hex whose center is closest to the district's
+    // geometric mean — guarantees the label sits inside a real block, not
+    // on a border (which can happen for irregular shapes).
+    const meanX = s.sx / s.n;
+    const meanY = s.sy / s.n;
+    let bestId = s.blocks[0];
+    let bestD2 = Infinity;
+    for (const id of s.blocks) {
+      const b = byId.get(id)!;
+      const d2 = (b.cx - meanX) ** 2 + (b.cy - meanY) ** 2;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        bestId = id;
+      }
+    }
+    const anchor = byId.get(bestId)!;
+    out.push({
+      district: d,
+      cx: anchor.cx,
+      cy: anchor.cy,
+      votesA: s.votesA,
+      votesB: s.votesB,
+    });
+  }
+  return out;
+}
+
+// Build a two-line label for a sub-district in combine view: Party A count on
+// top, Party B count below (e.g. ["3A", "7B"]).
+export function subDistrictLabelLines(sum: SubDistrictSummary): string[] {
+  return [`${sum.votesA}A`, `${sum.votesB}B`];
+}
+
 // Two sub-districts are adjacent if any block of one is adjacent to any block
 // of the other (across the inter-block adjacency graph).
 export function subDistrictsAdjacent(
