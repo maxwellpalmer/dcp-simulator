@@ -66,7 +66,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [stage, asgHistory, pairHistory]);
 
-  const [dist, setDist] = useState<DistributionMode>("random");
+  const [dist, setDist] = useState<DistributionMode>("random5050");
   const [seed, setSeed] = useState(1);
   const [errors, setErrors] = useState<ValidationError[] | null>(null);
 
@@ -469,8 +469,8 @@ function VoterSection({
         onChange={(e) => setDist(e.target.value as DistributionMode)}
         className="border rounded px-2 py-1 w-full"
       >
-        <option value="random">Random (40% A)</option>
         <option value="random5050">Random (50/50)</option>
+        <option value="random">Random (40% A)</option>
         <option value="minorityClusteredA">Minority A clustered</option>
         <option value="majorityClusteredA">Majority A clustered</option>
         <option value="minorityClusteredB">Minority B clustered</option>

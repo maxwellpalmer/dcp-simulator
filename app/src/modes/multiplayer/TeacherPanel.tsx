@@ -112,8 +112,8 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
             <select value={voterDist}
                     onChange={(e) => setVoterDist(e.target.value as DistributionMode)}
                     className="ml-2 border rounded px-2 py-1">
-              <option value="random">Random (40/60)</option>
-            <option value="random5050">Random (50/50)</option>
+              <option value="random5050">Random (50/50)</option>
+            <option value="random">Random (40/60)</option>
               <option value="minorityClusteredA">Minority A clustered</option>
               <option value="majorityClusteredA">Majority A clustered</option>
               <option value="minorityClusteredB">Minority B clustered</option>

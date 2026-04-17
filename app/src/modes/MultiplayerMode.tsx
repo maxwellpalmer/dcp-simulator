@@ -184,7 +184,7 @@ function CreateForm({
   );
   const [nDistricts, setNDistricts] = useState(dcpOptions[0]);
   const [totalRounds, setTotalRounds] = useState(3);
-  const [voterDist, setVoterDist] = useState<DistributionMode>("random");
+  const [voterDist, setVoterDist] = useState<DistributionMode>("random5050");
   const [passphrase, setPassphrase] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -233,8 +233,8 @@ function CreateForm({
       <label className="block text-sm">Default voter distribution
         <select className="ml-2 border rounded px-2 py-1" value={voterDist}
                 onChange={(e) => setVoterDist(e.target.value as DistributionMode)}>
-          <option value="random">Random (40/60)</option>
           <option value="random5050">Random (50/50)</option>
+          <option value="random">Random (40/60)</option>
           <option value="minorityClusteredA">Minority A clustered</option>
           <option value="majorityClusteredA">Majority A clustered</option>
           <option value="minorityClusteredB">Minority B clustered</option>
