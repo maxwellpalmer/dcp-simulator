@@ -213,15 +213,34 @@ export function MapView({
         grid.blocks.map((b) => {
           const v = voters.get(b.id);
           if (!v) return null;
+          if (v === "A") {
+            return (
+              <circle
+                key={b.id}
+                cx={b.cx}
+                cy={b.cy}
+                r={0.12}
+                fill={VOTER_COLORS.A}
+                stroke="#000"
+                strokeWidth={0.015}
+                pointerEvents="none"
+              />
+            );
+          }
+          // Party B: upward-pointing triangle (apex at larger y, which renders
+          // as "up" because the SVG is flipped with scaleY(-1)).
+          const r = 0.16;
+          const dx = r * Math.sqrt(3) / 2;
+          const dy = r / 2;
+          const points = `${b.cx},${b.cy + r} ${b.cx - dx},${b.cy - dy} ${b.cx + dx},${b.cy - dy}`;
           return (
-            <circle
+            <polygon
               key={b.id}
-              cx={b.cx}
-              cy={b.cy}
-              r={0.12}
-              fill={VOTER_COLORS[v]}
+              points={points}
+              fill={VOTER_COLORS.B}
               stroke="#000"
-              strokeWidth={0.015}
+              strokeWidth={0.02}
+              strokeLinejoin="round"
               pointerEvents="none"
             />
           );

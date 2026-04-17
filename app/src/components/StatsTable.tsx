@@ -1,5 +1,5 @@
 import type { DistrictStats } from "../lib/types";
-import { districtColor } from "../lib/palette";
+import { districtColor, VOTER_COLORS } from "../lib/palette";
 import { seatCount } from "../lib/stats";
 
 interface Props {
@@ -11,6 +11,26 @@ export function StatsTable({ stats, expectedPop }: Props) {
   const seats = seatCount(stats);
   return (
     <div className="text-sm overflow-x-auto">
+      <div className="flex items-center gap-4 mb-2 text-xs text-gray-700">
+        <span className="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="-1 -1 2 2" aria-hidden="true">
+            <circle cx="0" cy="0" r="0.7" fill={VOTER_COLORS.A} stroke="#000" strokeWidth="0.08" />
+          </svg>
+          Party A
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="-1 -1 2 2" aria-hidden="true">
+            <polygon
+              points="0,-0.85 0.736,0.425 -0.736,0.425"
+              fill={VOTER_COLORS.B}
+              stroke="#000"
+              strokeWidth="0.12"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Party B
+        </span>
+      </div>
       <table className="w-full border-collapse">
         <thead>
           <tr className="text-left text-gray-600">
