@@ -7,6 +7,7 @@ export type RoundStatus = "define" | "combine" | "done";
 
 export type DistributionMode =
   | "random"
+  | "random5050"
   | "minorityClusteredA"
   | "majorityClusteredA"
   | "minorityClusteredB"

@@ -5,6 +5,7 @@ export type VoterMap = Map<BlockId, Party>;
 
 export type DistributionMode =
   | "random"
+  | "random5050"
   | "minorityClusteredA"
   | "majorityClusteredA"
   | "minorityClusteredB"
@@ -27,17 +28,15 @@ export function generateVoters(
   const nA =
     params.mode === "majorityClusteredA" || params.mode === "minorityClusteredB"
       ? Math.round(n * 0.6)
-      : Math.round(n * pctMinority);
-  // After the above, Party A voter count:
-  //  minorityClusteredA → 40% A (A minority, clustered)
-  //  majorityClusteredA → 60% A (A majority, clustered)
-  //  minorityClusteredB → 60% A (B minority = A majority), B clustered
-  //  majorityClusteredB → 40% A (B majority), B clustered
-  //  random             → 40% A
+      : params.mode === "random5050"
+        ? Math.round(n * 0.5)
+        : Math.round(n * pctMinority);
 
-  const nActualA = params.mode === "random" ? Math.round(n * pctMinority) : nA;
+  const nActualA = params.mode === "random" ? Math.round(n * pctMinority)
+    : params.mode === "random5050" ? Math.round(n * 0.5)
+    : nA;
 
-  if (params.mode === "random") {
+  if (params.mode === "random" || params.mode === "random5050") {
     return randomAssign(grid, nActualA, params.seed);
   }
 

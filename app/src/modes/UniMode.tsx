@@ -148,6 +148,7 @@ export function UniMode({ grid, nDistricts }: Props) {
             className="border rounded px-2 py-1 w-full"
           >
             <option value="random">Random (40% A)</option>
+            <option value="random5050">Random (50/50)</option>
             <option value="minorityClusteredA">Minority A clustered</option>
             <option value="majorityClusteredA">Majority A clustered</option>
             <option value="minorityClusteredB">Minority B clustered</option>
