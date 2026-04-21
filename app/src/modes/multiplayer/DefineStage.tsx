@@ -172,7 +172,7 @@ export function DefineStage({ grid, state, student, onSubmitted }: Props) {
         </section>
         <section>
           <h3 className="font-semibold mb-1">Sub-district stats</h3>
-          <StatsTable stats={stats} expectedPop={expectedPop} />
+          <StatsTable stats={stats} expectedPop={expectedPop} voters={voters} />
         </section>
         {errors && (
           <section role="alert" aria-live="polite" className={`p-3 rounded text-sm ${errors.length === 0 ? "bg-green-100 text-green-900" : "bg-red-100 text-red-900"}`}>

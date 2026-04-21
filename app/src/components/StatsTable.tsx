@@ -1,16 +1,22 @@
 import type { DistrictStats } from "../lib/types";
+import type { VoterMap } from "../lib/voters";
 import { districtColor, VOTER_COLORS } from "../lib/palette";
 import { seatCount } from "../lib/stats";
 
 interface Props {
   stats: DistrictStats[];
   expectedPop: number;
+  voters: VoterMap;
 }
 
-export function StatsTable({ stats, expectedPop }: Props) {
+export function StatsTable({ stats, expectedPop, voters }: Props) {
   const seats = seatCount(stats);
-  const totalA = stats.reduce((sum, s) => sum + s.votesA, 0);
-  const totalB = stats.reduce((sum, s) => sum + s.votesB, 0);
+  let totalA = 0;
+  let totalB = 0;
+  for (const party of voters.values()) {
+    if (party === "A") totalA++;
+    else totalB++;
+  }
   return (
     <div className="text-sm overflow-x-auto">
       <div className="flex items-center gap-4 mb-2 text-xs text-gray-700">

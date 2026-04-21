@@ -219,7 +219,7 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
         </section>
         <section>
           <h3 className="font-semibold mb-1">Final district stats</h3>
-          <StatsTable stats={finalStats} expectedPop={expectedPop} />
+          <StatsTable stats={finalStats} expectedPop={expectedPop} voters={voters} />
         </section>
         {errors && errors.length > 0 && (
           <section role="alert" aria-live="polite" className="p-3 rounded text-sm bg-red-100 text-red-900">

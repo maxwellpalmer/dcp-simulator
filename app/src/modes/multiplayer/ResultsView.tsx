@@ -58,7 +58,7 @@ export function ResultsView({ grid, state, student }: Props) {
                   {" "}({seats.A}W · {seats.ties}T · {seats.B}L)
                 </span>
               </div>
-              <StatsTable stats={stats} expectedPop={grid.blocks.length / nDistricts} />
+              <StatsTable stats={stats} expectedPop={grid.blocks.length / nDistricts} voters={voters} />
             </div>
           );
         }

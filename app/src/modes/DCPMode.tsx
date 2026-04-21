@@ -381,7 +381,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
 
             <section>
               <h3 className="font-semibold mb-1">Sub-district stats</h3>
-              <StatsTable stats={defineStats} expectedPop={expectedPop} />
+              <StatsTable stats={defineStats} expectedPop={expectedPop} voters={voters} />
             </section>
           </>
         )}
@@ -400,7 +400,7 @@ export function DCPMode({ grid, nDistricts }: Props) {
             {finalStats.length > 0 && (
               <section>
                 <h3 className="font-semibold mb-1">Final district stats</h3>
-                <StatsTable stats={finalStats} expectedPop={expectedPop * 2} />
+                <StatsTable stats={finalStats} expectedPop={expectedPop * 2} voters={voters} />
               </section>
             )}
           </>

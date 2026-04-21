@@ -190,7 +190,7 @@ export function UniMode({ grid, nDistricts }: Props) {
 
         <section>
           <h3 className="font-semibold mb-1">Stats</h3>
-          <StatsTable stats={stats} expectedPop={expectedPop} />
+          <StatsTable stats={stats} expectedPop={expectedPop} voters={voters} />
         </section>
 
         {errors && (
