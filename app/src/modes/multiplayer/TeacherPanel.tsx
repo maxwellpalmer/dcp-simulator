@@ -79,8 +79,7 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
   };
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <header className="pb-3 border-b flex flex-wrap items-baseline gap-4">
         <h2 className="text-2xl font-semibold">Teacher dashboard</h2>
         <div className="text-sm flex items-baseline gap-2">
@@ -260,7 +259,6 @@ export function TeacherPanel({ code, teacherToken, state, grid, refresh }: Props
           </div>
         </section>
       )}
-      </div>
     </div>
   );
 }

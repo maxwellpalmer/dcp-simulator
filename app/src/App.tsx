@@ -91,7 +91,7 @@ export default function App() {
           </div>
         )}
       </header>
-      <main className="flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-y-auto">
         {mode === "uni" && <UniMode grid={grid} nDistricts={nDistricts} />}
         {mode === "dcp" && <DCPMode grid={grid} nDistricts={nDistricts} />}
         {mode === "session" && <MultiplayerMode />}
