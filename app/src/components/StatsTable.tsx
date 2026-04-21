@@ -9,6 +9,8 @@ interface Props {
 
 export function StatsTable({ stats, expectedPop }: Props) {
   const seats = seatCount(stats);
+  const totalA = stats.reduce((sum, s) => sum + s.votesA, 0);
+  const totalB = stats.reduce((sum, s) => sum + s.votesB, 0);
   return (
     <div className="text-sm overflow-x-auto">
       <div className="flex items-center gap-4 mb-2 text-xs text-gray-700">
@@ -16,7 +18,7 @@ export function StatsTable({ stats, expectedPop }: Props) {
           <svg width="14" height="14" viewBox="-1 -1 2 2" aria-hidden="true">
             <circle cx="0" cy="0" r="0.7" fill={VOTER_COLORS.A} stroke="#000" strokeWidth="0.08" />
           </svg>
-          Party A
+          Party A ({totalA})
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="14" height="14" viewBox="-1 -1 2 2" aria-hidden="true">
@@ -28,7 +30,7 @@ export function StatsTable({ stats, expectedPop }: Props) {
               strokeLinejoin="round"
             />
           </svg>
-          Party B
+          Party B ({totalB})
         </span>
       </div>
       <table className="w-full border-collapse">
