@@ -273,7 +273,7 @@ build_grid <- function(blocks, size_label, district_options) {
 # Main
 
 if (target_size == "70" || target_size == "all") {
-  build_grid(load_hex_70(), "70", c(7, 14))
+  build_grid(load_hex_70(), "70", c(7, 10, 14))
 }
 if (target_size == "140" || target_size == "all") {
   build_grid(make_hex_140(), "140", c(7, 10, 14, 20))
