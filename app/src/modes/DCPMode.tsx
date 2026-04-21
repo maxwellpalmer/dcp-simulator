@@ -24,7 +24,7 @@ import {
 import { MapView, type SubLabel } from "../components/MapView";
 import { DistrictPicker } from "../components/DistrictPicker";
 import { StatsTable } from "../components/StatsTable";
-import { districtColor, lighten } from "../lib/palette";
+import { districtColor } from "../lib/palette";
 
 type Stage = "define" | "combine";
 
@@ -235,13 +235,14 @@ export function DCPMode({ grid, nDistricts }: Props) {
         m.set(b.id, districtColor(sub));
       } else {
         const finalD = subToFinal.get(sub);
-        if (finalD) m.set(b.id, districtColor(finalD));
-        else if (sub === pendingPick) m.set(b.id, lighten(districtColor(sub), 0.5));
-        else m.set(b.id, lighten(districtColor(sub), 0.75));
+        // Paired sub-districts take the final district's color; unpaired ones
+        // stay at their own hue. Pending pick is shown via the thick perimeter
+        // outline (perimeterBlocks), not by fill tint.
+        m.set(b.id, finalD ? districtColor(finalD) : districtColor(sub));
       }
     }
     return m;
-  }, [grid, assignment, stage, subToFinal, pendingPick]);
+  }, [grid, assignment, stage, subToFinal]);
 
   const boundaryGroup = useMemo(() => {
     // Group by sub-district in both stages so the seam between two paired

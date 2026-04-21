@@ -4,7 +4,7 @@ import type { Assignment, BlockId, DistrictId, Grid, ValidationError } from "../
 import { UNASSIGNED } from "../../lib/types";
 import { MapView } from "../../components/MapView";
 import { StatsTable } from "../../components/StatsTable";
-import { districtColor, lighten } from "../../lib/palette";
+import { districtColor } from "../../lib/palette";
 import { generateVoters } from "../../lib/voters";
 import {
   adjacentSubDistricts,
@@ -104,12 +104,13 @@ export function CombineStage({ grid, state, student, onSubmitted }: Props) {
     for (const b of grid.blocks) {
       const sub = assignment.get(b.id) ?? UNASSIGNED;
       const finalD = subToFinal.get(sub);
-      if (finalD) m.set(b.id, districtColor(finalD));
-      else if (sub === pendingPick) m.set(b.id, lighten(districtColor(sub), 0.5));
-      else m.set(b.id, lighten(districtColor(sub), 0.75));
+      // Paired sub-districts take the final district's color; unpaired sub-
+      // districts stay at their own hue. The pending-pick sub is distinguished
+      // by the thick perimeter outline (perimeterBlocks), not by fill tint.
+      m.set(b.id, finalD ? districtColor(finalD) : districtColor(sub));
     }
     return m;
-  }, [grid, assignment, subToFinal, pendingPick]);
+  }, [grid, assignment, subToFinal]);
 
   // Always group by sub-district so the seam between two paired sub-districts
   // stays visible. Final-district identity is conveyed by shared block color.
