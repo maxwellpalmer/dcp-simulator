@@ -235,10 +235,11 @@ export function DCPMode({ grid, nDistricts }: Props) {
         m.set(b.id, districtColor(sub));
       } else {
         const finalD = subToFinal.get(sub);
-        // Paired sub-districts take the final district's color; unpaired ones
-        // stay at their own hue. Pending pick is shown via the thick perimeter
-        // outline (perimeterBlocks), not by fill tint.
-        m.set(b.id, finalD ? districtColor(finalD) : districtColor(sub));
+        // Paired sub-districts take the final district's color; unpaired sub-
+        // districts are neutral gray — color only appears after a pairing is
+        // made, and disappears again if the pair is broken. Pending pick is
+        // shown via the thick perimeter outline (perimeterBlocks).
+        m.set(b.id, finalD ? districtColor(finalD) : "#f3f4f6");
       }
     }
     return m;
